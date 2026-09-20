@@ -150,7 +150,7 @@ $$;
 
 create or replace function public.advance_blind_audition(p_room text, p_client text)
 returns public.game_rooms language plpgsql security invoker set search_path = '' as $$
-declare v_room public.game_rooms; v_state jsonb; v_next integer; v_order jsonb;
+declare v_room public.game_rooms; v_state jsonb; v_next integer; v_order jsonb; v_artist jsonb; v_turns jsonb; v_performance integer; v_player_count integer; v_cpu integer; v_full boolean;
 begin
   select * into v_room from public.game_rooms where code=p_room for update;
   if not found then raise exception 'Room not found'; end if;
@@ -165,7 +165,45 @@ begin
     v_next:=0; v_state:=jsonb_set(v_state,'{auditionOrder}',v_order);
   end if;
   v_state:=jsonb_set(v_state,'{auditionIndex}',to_jsonb(v_next));
+  select bool_and(jsonb_array_length(team)=12) into v_full from jsonb_array_elements(v_state->'teams') as teams(team);
+  if not v_full then
+    v_artist:=v_order->v_next;
+    v_player_count:=coalesce((v_state->>'playerCount')::integer,0);
+    v_performance:=least(99,greatest(35,round(coalesce((v_artist->>'strength')::numeric,65)*.52+random()*48)::integer));
+    v_turns:='[]'::jsonb;
+    for v_cpu in v_player_count..3 loop
+      if jsonb_array_length(coalesce(v_state->'teams'->v_cpu,'[]'::jsonb))<12 and random()<least(.84,greatest(.10,.06+v_performance*.0078)) then
+        v_turns:=v_turns||jsonb_build_array(v_cpu);
+      end if;
+    end loop;
+    v_state:=jsonb_set(v_state,'{blindRound}',jsonb_build_object('artist',v_artist,'turns',v_turns,'performance',v_performance,'decisions','[]'::jsonb));
+  end if;
   update public.game_rooms set state=v_state where code=p_room returning * into v_room;
+  return v_room;
+end;
+$$;
+
+-- Repairs an older room created before the atomic flow was installed.
+create or replace function public.ensure_blind_round(p_room text, p_client text)
+returns public.game_rooms language plpgsql security invoker set search_path = '' as $$
+declare v_room public.game_rooms; v_state jsonb; v_artist jsonb; v_turns jsonb; v_performance integer; v_player_count integer; v_cpu integer; v_full boolean;
+begin
+  select * into v_room from public.game_rooms where code=p_room for update;
+  if not found then raise exception 'Room not found'; end if;
+  if not (v_room.state->'roomSeats') @> jsonb_build_array(p_client) then raise exception 'You are not seated in this room'; end if;
+  v_state:=v_room.state;
+  select bool_and(jsonb_array_length(team)=12) into v_full from jsonb_array_elements(v_state->'teams') as teams(team);
+  if v_state->'pending' is null and v_state->'blindRound' is null and not v_full then
+    v_artist:=v_state->'auditionOrder'->coalesce((v_state->>'auditionIndex')::integer,0);
+    v_player_count:=coalesce((v_state->>'playerCount')::integer,0);
+    v_performance:=least(99,greatest(35,round(coalesce((v_artist->>'strength')::numeric,65)*.52+random()*48)::integer));
+    v_turns:='[]'::jsonb;
+    for v_cpu in v_player_count..3 loop
+      if jsonb_array_length(coalesce(v_state->'teams'->v_cpu,'[]'::jsonb))<12 and random()<least(.84,greatest(.10,.06+v_performance*.0078)) then v_turns:=v_turns||jsonb_build_array(v_cpu); end if;
+    end loop;
+    v_state:=jsonb_set(v_state,'{blindRound}',jsonb_build_object('artist',v_artist,'turns',v_turns,'performance',v_performance,'decisions','[]'::jsonb));
+    update public.game_rooms set state=v_state where code=p_room returning * into v_room;
+  end if;
   return v_room;
 end;
 $$;
@@ -173,3 +211,4 @@ $$;
 grant execute on function public.submit_blind_decision(text,text,boolean) to anon;
 grant execute on function public.resolve_blind_round(text,text) to anon;
 grant execute on function public.advance_blind_audition(text,text) to anon;
+grant execute on function public.ensure_blind_round(text,text) to anon;
