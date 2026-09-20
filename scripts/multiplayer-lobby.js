@@ -2,6 +2,36 @@
 let lobbyWatchTimer = null;
 let roomStartInFlight = false;
 
+function normalizeStartedRoomState(rawState) {
+  if (!rawState || !Array.isArray(rawState.artists)) return { state: rawState, repaired: false };
+
+  let state = rawState;
+  let repaired = false;
+  const legacyRound = state.blindRound;
+  if (legacyRound && !legacyRound.artist && Number.isFinite(legacyRound.id)) {
+    const artist = state.artists.find(candidate => candidate.id === legacyRound.id);
+    if (artist) {
+      state = {
+        ...state,
+        blindRound: {
+          id: state.blindRoundId || 1,
+          artist,
+          turns: Array.isArray(legacyRound.turns) ? legacyRound.turns : [],
+          performance: Number.isFinite(legacyRound.performance) ? legacyRound.performance : 55,
+          decisions: Array.isArray(legacyRound.decisions) ? legacyRound.decisions : []
+        }
+      };
+      repaired = true;
+    }
+  }
+
+  if (state.roomStarted !== true && state.artists.length >= 48 && (state.blindRound || state.pending || state.auditionOrder?.length)) {
+    state = { ...state, roomStarted: true };
+    repaired = true;
+  }
+  return { state, repaired };
+}
+
 async function saveLobbyMember(changes) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_room_member`, {
     method: 'POST',
@@ -24,8 +54,10 @@ async function saveLobbyMember(changes) {
 }
 
 function enterStartedRoom(state) {
+  const normalized = normalizeStartedRoomState(state);
+  state = normalized.state;
   if (!state?.roomStarted) return false;
-  if (!Array.isArray(state.artists) || state.artists.length < 48 || (state.blindRound && !state.blindRound.artist?.id)) {
+  if (!Array.isArray(state.artists) || state.artists.length < 48 || (state.blindRound && !Number.isFinite(state.blindRound.artist?.id))) {
     throw new Error('This room has an incomplete season state. Create a fresh room after both browsers have the latest version.');
   }
   hydrateRoom(state);
@@ -35,6 +67,9 @@ function enterStartedRoom(state) {
   $('#chatToggle').classList.remove('hidden');
   activateChatSidebar();
   setRoomStatus(`Team ${coaches[localSeat]} · live`);
+  if (normalized.repaired && roomHost === clientId) {
+    saveRoom();
+  }
   if (lobbyWatchTimer !== null) {
     clearInterval(lobbyWatchTimer);
     lobbyWatchTimer = null;
@@ -48,8 +83,9 @@ async function startOnlineSeason() {
   try {
     const latestRoom = await fetchRoom(roomCode);
     roomLastUpdate = latestRoom.updated_at;
-    if (latestRoom.state?.roomStarted === true) {
-      enterStartedRoom(latestRoom.state);
+    const normalized = normalizeStartedRoomState(latestRoom.state);
+    if (normalized.state?.roomStarted === true) {
+      enterStartedRoom(normalized.state);
       return;
     }
 
@@ -97,9 +133,10 @@ async function watchLobbyStart() {
   if (!roomCode || roomStarted) return;
   try {
     const row = await fetchRoom(roomCode);
-    if (row.state?.roomStarted === true) {
+    const normalized = normalizeStartedRoomState(row.state);
+    if (normalized.state?.roomStarted === true) {
       roomLastUpdate = row.updated_at;
-      enterStartedRoom(row.state);
+      enterStartedRoom(normalized.state);
     } else {
       roomLastUpdate = row.updated_at;
     }
