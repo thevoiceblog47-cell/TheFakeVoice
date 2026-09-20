@@ -16,3 +16,7 @@ included row-level-security policies allow anyone with a room code to access
 the shared game, so do not store personal or confidential information in room
 state or chat. A sign-in or server-side room token system would be the next
 step if you want private or moderated rooms.
+
+If you ran an earlier version of this SQL already, run the updated file again.
+It safely updates the database functions that coordinate simultaneous Blind
+Audition decisions.
