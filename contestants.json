@@ -1,0 +1,490 @@
+[
+  {
+    "name": "October Lockhart",
+    "genre": "Pop, Indie",
+    "image": "https://i.imgur.com/SU8bWuH.jpeg",
+    "age": 19,
+    "hometown": "North Plainfield, New Jersey",
+    "gender": "Male"
+  },
+  {
+    "name": "Vienna Liu",
+    "genre": "Country",
+    "image": "https://i.imgur.com/71x5jor.jpeg",
+    "age": 29,
+    "hometown": "Hawthorne, California",
+    "gender": "Female"
+  },
+  {
+    "name": "Shasta Burris",
+    "genre": "R&B, Soul",
+    "image": "https://i.imgur.com/fM7cdmu.jpeg",
+    "age": 32,
+    "hometown": "Fayetteville, North Carolina",
+    "gender": "Female"
+  },
+  {
+    "name": "BSOUL",
+    "genre": "R&B, Soul",
+    "image": "https://i.imgur.com/mwFqpPs.jpeg",
+    "age": 29,
+    "hometown": "Findlay, Ohio",
+    "gender": "Male"
+  },
+  {
+    "name": "Avantika Jamil",
+    "genre": "Pop, Soul",
+    "image": "https://i.imgur.com/NAXFSrQ.jpeg",
+    "age": 35,
+    "hometown": "Troy, Michigan",
+    "gender": "Female"
+  },
+  {
+    "name": "Deepali Vartak",
+    "genre": "Soul",
+    "image": "https://i.imgur.com/qsrGmdR.jpeg",
+    "age": 52,
+    "hometown": "Burleson, Texas",
+    "gender": "Female"
+  },
+  {
+    "name": "Madame Trinity",
+    "genre": "Soul",
+    "image": "https://i.imgur.com/9bd9D87.jpeg",
+    "age": 67,
+    "hometown": "Detroit, Michigan",
+    "gender": "Female"
+  },
+  {
+    "name": "Paisley Mack",
+    "genre": "Country",
+    "image": "https://i.imgur.com/k6V0ejE.jpeg",
+    "age": 21,
+    "hometown": "Lincoln, Nebraska",
+    "gender": "Female"
+  },
+  {
+    "name": "Petal Petunia",
+    "genre": "Pop, Folk",
+    "image": "https://i.imgur.com/lGo8gUg.jpeg",
+    "age": 21,
+    "hometown": "Altoona, Pennsylvania",
+    "gender": "Female"
+  },
+  {
+    "name": "Mandy Farrow",
+    "genre": "Country, Pop",
+    "image": "https://i.imgur.com/aa0v6a0.jpeg",
+    "age": 29,
+    "hometown": "Atlanta, Georgia",
+    "gender": "Female"
+  },
+  {
+    "name": "EZZE",
+    "genre": "Pop, Soul",
+    "image": "https://i.imgur.com/PbQawQY.jpeg",
+    "age": 28,
+    "hometown": "Trenton, New Jersey",
+    "gender": "Female"
+  },
+  {
+    "name": "Stef Bingham",
+    "genre": "Rock",
+    "image": "https://i.imgur.com/Qlv06Ou.jpeg",
+    "age": 33,
+    "hometown": "Brooklyn, New York",
+    "gender": "Female"
+  },
+  {
+    "name": "Tanya Rose Maribould",
+    "genre": "Opera",
+    "image": "https://i.imgur.com/Fq9Ss99.jpeg",
+    "age": 75,
+    "hometown": "Jonesboro, Arkansas",
+    "gender": "Female"
+  },
+  {
+    "name": "Lindzi Ramos",
+    "genre": "Nursery rhymes",
+    "image": "https://i.imgur.com/QSWtVjJ.jpeg",
+    "age": 35,
+    "hometown": "Las Cruces, New Mexico",
+    "gender": "Female"
+  },
+  {
+    "name": "Katie Tang",
+    "genre": "Pop, Singer-songwriter",
+    "image": "https://i.imgur.com/7eLluiv.jpeg",
+    "age": 17,
+    "hometown": "Naperville, Illinois",
+    "gender": "Female"
+  },
+  {
+    "name": "Jay Shah",
+    "genre": "Pop, Alernative",
+    "image": "https://i.imgur.com/vM0WaUs.jpeg",
+    "age": 25,
+    "hometown": "Cleveland, Ohio",
+    "gender": "Male"
+  },
+  {
+    "name": "Hunter Vanextolin",
+    "genre": "Alternative, Rock",
+    "image": "https://i.imgur.com/XWpVeVK.jpeg",
+    "age": 22,
+    "hometown": "Orlando, Florida",
+    "gender": "Male"
+  },
+  {
+    "name": "Danni Lim",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/MLElt9Q.jpeg",
+    "age": 20,
+    "hometown": "Charleston, West Virginia",
+    "gender": "Female"
+  },
+  {
+    "name": "Cooper Farnsworth",
+    "genre": "Alternative, Indie",
+    "image": "https://i.imgur.com/Z6VYZ9h.png",
+    "age": 30,
+    "hometown": "Lacey, Washington",
+    "gender": "Male"
+  },
+  {
+    "name": "Maddox Jazz",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/ASibC3Y.jpeg",
+    "age": 29,
+    "hometown": "Los Angeles, California",
+    "gender": "Male"
+  },
+  {
+    "name": "Barrett Stax",
+    "genre": "Jazz",
+    "image": "https://i.imgur.com/JwyeQ1s.jpeg",
+    "age": 22,
+    "hometown": "Fort Wayne, Indiana",
+    "gender": "Male"
+  },
+  {
+    "name": "Ty Steck",
+    "genre": "Pop, Alternative",
+    "image": "https://i.imgur.com/xkzcsN7.jpeg",
+    "age": 25,
+    "hometown": "Council Bluffs, Iowa",
+    "gender": "Male"
+  },
+  {
+    "name": "Xander Browne",
+    "genre": "Country",
+    "image": "https://i.imgur.com/C6bpjRz.jpeg",
+    "age": 28,
+    "hometown": "Boise, Idaho",
+    "gender": "Male"
+  },
+  {
+    "name": "Emma Leanne",
+    "genre": "Country",
+    "image": "https://i.imgur.com/nrBKOP2.jpeg",
+    "age": 16,
+    "hometown": "Nampa, Idaho",
+    "gender": "Female"
+  },
+  {
+    "name": "Titi Sorensen",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/69mVsI2.jpeg",
+    "age": 24,
+    "hometown": "Casa Grande, Arizona",
+    "gender": "Female"
+  },
+  {
+    "name": "Bo McNeil",
+    "genre": "Country",
+    "image": "https://i.imgur.com/9tAIbeX.jpeg",
+    "age": 44,
+    "hometown": "O'Fallon, Missouri",
+    "gender": "Male"
+  },
+  {
+    "name": "Buddy Cheney",
+    "genre": "Soul",
+    "image": "https://i.imgur.com/i1W8fJo.jpeg",
+    "age": 57,
+    "hometown": "Denver, Colorado",
+    "gender": "Male"
+  },
+  {
+    "name": "Rochester Vox",
+    "genre": "Alternative, Rock",
+    "image": "https://i.imgur.com/S7a7XPx.jpeg",
+    "age": 24,
+    "hometown": "Baton Rouge, Louisiana",
+    "gender": "Female"
+  },
+  {
+    "name": "Tanner Knapp",
+    "genre": "Alternative, Rock",
+    "image": "https://i.imgur.com/bkNc6ih.jpeg",
+    "age": 29,
+    "hometown": "Portland, Oregon",
+    "gender": "Male"
+  },
+  {
+    "name": "Brendan Huberclent",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/wndLBRI.jpeg",
+    "age": 25,
+    "hometown": "Holyoke, Massachusetts",
+    "gender": "Male"
+  },
+  {
+    "name": "Marisha Alvarando",
+    "genre": "Pop, Jazz",
+    "image": "https://i.imgur.com/IIEFDqT.jpeg",
+    "age": 29,
+    "hometown": "San Diego, California",
+    "gender": "Female"
+  },
+  {
+    "name": "Susie House",
+    "genre": "Pop, Hip-Hop",
+    "image": "https://i.imgur.com/rYjyx4s.jpeg",
+    "age": 19,
+    "hometown": "Sioux Falls, South Dakota",
+    "gender": "Female"
+  },
+  {
+    "name": "Penelope VanJess",
+    "genre": "Pop, R&B",
+    "image": "https://i.imgur.com/sqslONx.jpeg",
+    "age": 30,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Bridger McDonald",
+    "genre": "Alternative, Pop",
+    "image": "https://i.imgur.com/Vn0PSH2.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Dave Horner",
+    "genre": "Rock, Metal",
+    "image": "https://i.imgur.com/mwWuzFY.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Sam Sato",
+    "genre": "Pop, Alternative",
+    "image": "https://i.imgur.com/evGtT22.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Drew Palomer",
+    "genre": "Pop, Rock",
+    "image": "https://i.imgur.com/WR4pyKf.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Abby Rabillion",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/vQRpliv.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Carter Bellows",
+    "genre": "Pop, Indie",
+    "image": "https://i.imgur.com/EUQO8yA.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "DaVonta Hirett",
+    "genre": "Pop, R&B",
+    "image": "https://i.imgur.com/qzFoXKi.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Mike Stagnate",
+    "genre": "Rock",
+    "image": "https://i.imgur.com/y2t0hII.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Steve Brand",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/sBtwULs.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Anaya Ruhit",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/kCEYFJV.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Hanna Towers",
+    "genre": "Pop, Singer-Songwriter",
+    "image": "https://i.imgur.com/CUpEo4n.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Ellen Altobelli",
+    "genre": "Rock",
+    "image": "https://i.imgur.com/48nN44u.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Elena Petrovisca",
+    "genre": "Alternative, Pop",
+    "image": "https://i.imgur.com/f5bW0hv.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Adam A'tuna",
+    "genre": "Island",
+    "image": "https://i.imgur.com/UZhSUxV.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Maryanne Gorgeous",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/h0BzQWr.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Sindy & Stile",
+    "genre": "R&B, Soul",
+    "image": "https://i.imgur.com/6aZGxAO.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Anthony Hart",
+    "genre": "R&B",
+    "image": "https://i.imgur.com/m8BucDo.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "June Lockhart",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/UBpeNqx.jpeg",
+    "age": 23,
+    "hometown": "North Plainfield, New Jersey",
+    "gender": "Female"
+  },
+  {
+    "name": "Bianca Alan",
+    "genre": "Pop, Disco",
+    "image": "https://i.imgur.com/o0HPIcK.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Cynthia Houser",
+    "genre": "Pop, R&B",
+    "image": "https://i.imgur.com/bYoEYw0.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Small Packages",
+    "genre": "Country, Pop",
+    "image": "https://i.imgur.com/2s7bLrg.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Chad Rubinx",
+    "genre": "Jazz",
+    "image": "https://i.imgur.com/StiOzgB.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Chris & Carly",
+    "genre": "Folk, Indie",
+    "image": "https://i.imgur.com/0y1qZe5.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Both"
+  },
+  {
+    "name": "Ryan Hashimoto",
+    "genre": "Alternative, Rock",
+    "image": "https://i.imgur.com/e2rwu6g.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Amari Johnson",
+    "genre": "Rock, R&B",
+    "image": "https://i.imgur.com/8G1AHWX.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Harkeet Singh",
+    "genre": "Soul",
+    "image": "https://i.imgur.com/EXaTzRd.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Male"
+  },
+  {
+    "name": "Jessie Lated",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/Jv04Cfy.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  },
+  {
+    "name": "Maryam Al-Kalifa",
+    "genre": "Pop",
+    "image": "https://i.imgur.com/49er9e1.jpeg",
+    "age": null,
+    "hometown": null,
+    "gender": "Female"
+  }
+]
