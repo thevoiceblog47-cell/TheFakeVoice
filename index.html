@@ -259,13 +259,55 @@ $('#chatToggle').onclick=()=>{let open=document.body.classList.toggle('room-chat
 const multiplayerBattleResolve=resolveBattle;resolveBattle=function(chosen){if(onlineRoom())return multiplayerBattleResolve(chosen);let b=battleQueue[battleIndex],winner=isHuman(b.coach)?(b.a.id===chosen?b.a:b.b):(b.aPerformance+Math.random()*12>b.bPerformance+Math.random()*12?b.a:b.b),loser=winner===b.a?b.b:b.a;recordRoundScore(b.a,'Battles',b.aPerformance);recordRoundScore(b.b,'Battles',b.bPerformance);loser.status='battle-elim';let entry={...b,winner,loser,outcome:'',stealers:[]};battleLog.push(entry);$('#versus').innerHTML=fighter(b.a,b.aPerformance,b.aComment)+'<div class="vs">VS</div>'+fighter(b.b,b.bPerformance,b.bComment);$('#battleResolution').innerHTML=`<div class="result-banner"><p class="eyebrow">Battle result</p><h2>${winner.name} wins the Battle.</h2><p class="copy">${loser.name} is now available to steal.</p><button class="btn" id="continueToSteals">CONTINUE TO STEAL DECISIONS →</button></div>`;$('#continueToSteals').onclick=()=>beginSharedSteal(loser,entry,'battle')}
 $('#enterBtn').onclick=async()=>{let button=$('#enterBtn');button.disabled=true;button.textContent='LOADING ROSTER…';await rosterReady;if(contestantRoster.length<48){button.disabled=false;button.textContent='START THE SEASON →';alert('The contestant spreadsheet could not be loaded.');return}let clean=id=>($(id).value.trim()||$(id).placeholder||'Coach').slice(0,22);playerCount=+$('#playerCount').value;coachName=clean('#coachName');cpuCoachNames=[clean('#cpuCoach1'),clean('#cpuCoach2'),clean('#cpuCoach3')];$('#startScreen').classList.add('hidden');$('#app').hidden=false;resetGame();button.disabled=false;button.textContent='START THE SEASON →'}
 let lobbyWatchTimer=null;
-async function startOnlineSeason(){let allReady=roomMembers.length>0&&roomMembers.every(member=>member.ready&&member.name);if(!allReady||roomHost!==clientId)return;await rosterReady;roomStarted=true;playerCount=roomMembers.length;let defaults=['Lena','Marcus','Ivy','Nova'];coaches=Array.from({length:4},(_,seat)=>roomMembers.find(member=>member.seat===seat)?.name||defaults[seat]);coachName=coaches[0];cpuCoachNames=coaches.slice(1);roomSeats=Array(4).fill(null);roomMembers.forEach(member=>roomSeats[member.seat]=member.id);resetGame();await saveRoom();let confirmation=await fetchRoom(roomCode);if(confirmation.state.roomStarted!==true){roomStarted=false;renderStableLobby();toast('The room did not start. Please try again.');return}roomLastUpdate=confirmation.updated_at;$('#startScreen').classList.add('hidden');$('#app').hidden=false;activateChatSidebar();setRoomStatus(`Team ${coaches[localSeat]} · live`)}
-async function watchLobbyStart(){if(!roomCode||roomStarted)return;try{let row=await fetchRoom(roomCode);if(row.state.roomStarted===true){roomLastUpdate=row.updated_at;hydrateRoom(row.state)}}catch(error){console.warn(error)}}
+let roomStartInFlight=false;
+function enterStartedRoom(state){
+  if(!state?.roomStarted)return false;
+  hydrateRoom(state);
+  $('#roomLobby').classList.add('hidden');
+  $('#startScreen').classList.add('hidden');
+  $('#app').hidden=false;
+  $('#chatToggle').classList.remove('hidden');
+  activateChatSidebar();
+  setRoomStatus(`Team ${coaches[localSeat]} · live`);
+  if(lobbyWatchTimer!==null){clearInterval(lobbyWatchTimer);lobbyWatchTimer=null}
+  return true;
+}
+async function startOnlineSeason(){
+  let allReady=roomMembers.length>0&&roomMembers.every(member=>member.ready&&member.name);
+  if(!allReady||roomHost!==clientId||roomStartInFlight)return;
+  roomStartInFlight=true;
+  try{
+    await rosterReady;
+    roomStarted=true;
+    playerCount=roomMembers.length;
+    let defaults=['Lena','Marcus','Ivy','Nova'];
+    coaches=Array.from({length:4},(_,seat)=>roomMembers.find(member=>member.seat===seat)?.name||defaults[seat]);
+    coachName=coaches[0];cpuCoachNames=coaches.slice(1);
+    roomSeats=Array(4).fill(null);roomMembers.forEach(member=>roomSeats[member.seat]=member.id);
+    resetGame();
+    await saveRoom();
+    let confirmation=await fetchRoom(roomCode);
+    if(!enterStartedRoom(confirmation.state)){
+      roomStarted=false;renderStableLobby();toast('The room did not start. Please try again.');
+      return;
+    }
+    roomLastUpdate=confirmation.updated_at;
+  }catch(error){
+    roomStarted=false;renderStableLobby();toast('The room could not start. Please try again.');console.warn(error);
+  }finally{roomStartInFlight=false}
+}
+async function watchLobbyStart(){
+  if(!roomCode||roomStarted)return;
+  try{
+    let row=await fetchRoom(roomCode);
+    if(row.state?.roomStarted===true){roomLastUpdate=row.updated_at;enterStartedRoom(row.state)}
+    else roomLastUpdate=row.updated_at;
+  }catch(error){console.warn(error)}
+}
 const initialStableLobby=renderStableLobby;renderStableLobby=function(){initialStableLobby();$('#lobbyStart').onclick=startOnlineSeason;if(lobbyWatchTimer===null)lobbyWatchTimer=setInterval(watchLobbyStart,700)};showRoomLobby=renderStableLobby;
-const directLobbyHydrate=hydrateRoom;hydrateRoom=function(state){directLobbyHydrate(state);if(state.roomStarted===true&&lobbyWatchTimer!==null){clearInterval(lobbyWatchTimer);lobbyWatchTimer=null}}
+const directLobbyHydrate=hydrateRoom;hydrateRoom=function(state){directLobbyHydrate(state);if(state.roomStarted===true){$('#roomLobby').classList.add('hidden');$('#startScreen').classList.add('hidden');$('#app').hidden=false;if(lobbyWatchTimer!==null){clearInterval(lobbyWatchTimer);lobbyWatchTimer=null}}}
 /* Do not let a delayed lobby click overwrite the host's newer start state. */
 const preLobbyQueueSave=queueRoomSave;queueRoomSave=function(){if(onlineRoom()&&roomStarted===false)return;preLobbyQueueSave()}
-setInterval(()=>{if(roomCode&&roomStarted===false)watchLobbyStart()},700)
 /* CPU-only steal decisions resolve automatically; wait screens are reserved for humans. */
 const coordinatedSharedSteal=beginSharedSteal;beginSharedSteal=function(artist,entry,round){if(!onlineRoom())return coordinatedSharedSteal(artist,entry,round);let cap=round==='battle'?2:1,counts=round==='battle'?cpuSteals:cpuKoSteals,eligible=coaches.map((_,seat)=>seat).filter(seat=>seat!==entry.coach&&counts[seat]<cap),humans=eligible.filter(isHuman);if(!humans.length){entry.stealers=entry.stealers||[];eligible.filter(seat=>!isHuman(seat)).forEach(seat=>{if(!entry.stealers.includes(seat)&&Math.random()<.38)entry.stealers.push(seat)});stealResponses=null;finishSharedSteal(artist,entry,round);if(onlineRoom())saveRoom();return}if(!stealResponses||stealResponses.round!==round||stealResponses.artist?.id!==artist.id)stealResponses={artist,entry,round,pending:new Set(humans)};let next=[...stealResponses.pending][0];if(next===undefined){stealResponses=null;finishSharedSteal(artist,entry,round);if(onlineRoom())saveRoom();return}let target=round==='battle'?'#battleResolution':'#koResolution';if(next===localSeat){$(target).innerHTML=`<div class="steal-box"><p class="eyebrow">Team ${coaches[localSeat]}</p><h2>Steal ${artist.name}?</h2><div class="button-pair"><button class="btn" id="roomSteal">STEAL</button><button class="btn secondary" id="roomPassSteal">PASS</button></div></div>`;$('#roomSteal').onclick=()=>answerSharedSteal(localSeat,true);$('#roomPassSteal').onclick=()=>answerSharedSteal(localSeat,false)}else waitForCoach(target,next,'deciding whether to steal')}
 const onlineBattleResolve=resolveBattle;resolveBattle=function(choice){let result=onlineBattleResolve(choice);if(onlineRoom())saveRoom();return result}
