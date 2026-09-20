@@ -25,6 +25,9 @@ async function saveLobbyMember(changes) {
 
 function enterStartedRoom(state) {
   if (!state?.roomStarted) return false;
+  if (!Array.isArray(state.artists) || state.artists.length < 48 || (state.blindRound && !state.blindRound.artist?.id)) {
+    throw new Error('This room has an incomplete season state. Create a fresh room after both browsers have the latest version.');
+  }
   hydrateRoom(state);
   $('#roomLobby').classList.add('hidden');
   $('#startScreen').classList.add('hidden');
@@ -40,11 +43,28 @@ function enterStartedRoom(state) {
 }
 
 async function startOnlineSeason() {
-  const allReady = roomMembers.length > 0 && roomMembers.every(member => member.ready && member.name);
-  if (!allReady || roomHost !== clientId || roomStartInFlight) return;
+  if (roomHost !== clientId || roomStartInFlight) return;
   roomStartInFlight = true;
   try {
+    const latestRoom = await fetchRoom(roomCode);
+    roomLastUpdate = latestRoom.updated_at;
+    if (latestRoom.state?.roomStarted === true) {
+      enterStartedRoom(latestRoom.state);
+      return;
+    }
+
+    hydrateRoom(latestRoom.state);
+    const allReady = roomMembers.length > 0 && roomMembers.every(member => member.ready && member.name);
+    if (!allReady) {
+      const waiting = roomMembers.filter(member => !member.ready || !member.name).map(member => member.name || `Coach ${member.seat + 1}`);
+      toast(`Waiting for ${waiting.join(', ')} to get ready.`);
+      return;
+    }
+
     await rosterReady;
+    if (contestantRoster.length < 48) {
+      throw new Error('The contestant roster did not load, so the season was not started. Refresh and try again.');
+    }
     roomStarted = true;
     playerCount = roomMembers.length;
     const defaults = ['Lena', 'Marcus', 'Ivy', 'Nova'];
@@ -66,7 +86,7 @@ async function startOnlineSeason() {
   } catch (error) {
     roomStarted = false;
     renderStableLobby();
-    toast('The room could not start. Please try again.');
+    toast(error.message || 'The room could not start. Please try again.');
     console.warn(error);
   } finally {
     roomStartInFlight = false;
@@ -84,6 +104,7 @@ async function watchLobbyStart() {
       roomLastUpdate = row.updated_at;
     }
   } catch (error) {
+    toast(error.message || 'Could not enter the started room.');
     console.warn(error);
   }
 }
@@ -129,4 +150,15 @@ hydrateRoom = function hydrateStartedLobbyRoom(state) {
       lobbyWatchTimer = null;
     }
   }
+};
+
+const renderStoredBlindRound = renderBlindFromRoom;
+renderBlindFromRoom = function renderSafeStoredBlindRound() {
+  if (!blindRound?.artist) {
+    $('#blindDecision').classList.remove('hidden');
+    $('#turnResult').classList.add('hidden');
+    $('#blindDecision').innerHTML = '<p class="eyebrow">Room recovery needed</p><h2>This room has incomplete audition data.</h2><p class="copy">Ask the host to create a new room after refreshing the game.</p>';
+    return;
+  }
+  renderStoredBlindRound();
 };
