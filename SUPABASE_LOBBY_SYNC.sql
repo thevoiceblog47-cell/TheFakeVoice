@@ -1,54 +1,21 @@
--- Run this once in the Supabase SQL Editor.
--- It makes lobby updates atomic: two coaches can become ready at the same time
--- without either browser overwriting the other coach's room state.
-
-create or replace function public.update_room_member(
-  p_room text,
-  p_member_id text,
-  p_name text default null,
-  p_ready boolean default null
-)
-returns table(state jsonb, updated_at timestamptz)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  current_state jsonb;
-  updated_members jsonb;
-begin
-  select game_rooms.state
-  into current_state
-  from public.game_rooms
-  where game_rooms.code = p_room
-  for update;
-
-  if current_state is null then
-    raise exception 'Room % does not exist', p_room;
-  end if;
-
-  select coalesce(
-    jsonb_agg(
-      case
-        when member ->> 'id' = p_member_id then
-          member || jsonb_strip_nulls(jsonb_build_object('name', p_name, 'ready', p_ready))
-        else member
-      end
-    ),
-    '[]'::jsonb
-  )
-  into updated_members
-  from jsonb_array_elements(coalesce(current_state -> 'roomMembers', '[]'::jsonb)) as members(member);
-
-  update public.game_rooms as room
-  set
-    state = jsonb_set(current_state, '{roomMembers}', updated_members, true),
-    updated_at = clock_timestamp()
-  where room.code = p_room
-  returning room.state, room.updated_at into state, updated_at;
-
-  return next;
-end;
-$$;
-
-grant execute on function public.update_room_member(text, text, text, boolean) to anon;
+-- TURN multiplayer rebuild. Run once in the Supabase SQL editor.
+-- Browsers never write a whole room snapshot: lobby changes and game actions are locked transactions.
+create extension if not exists pgcrypto;
+create table if not exists public.game_rooms(code text primary key check(code ~ '^[A-Z0-9]{6}$'),host_id text not null,status text not null default 'lobby' check(status in ('lobby','started')),seed text not null default encode(gen_random_bytes(12),'hex'),updated_at timestamptz not null default clock_timestamp());
+alter table public.game_rooms add column if not exists host_id text;
+alter table public.game_rooms add column if not exists status text not null default 'lobby';
+alter table public.game_rooms add column if not exists seed text not null default encode(gen_random_bytes(12),'hex');
+alter table public.game_rooms add column if not exists state jsonb;
+alter table public.game_rooms alter column state drop not null;
+create table if not exists public.game_room_members(room text not null references public.game_rooms(code) on delete cascade,member_id text not null,name text not null default '',seat integer not null check(seat between 0 and 3),ready boolean not null default false,primary key(room,member_id),unique(room,seat));
+create table if not exists public.game_room_actions(room text not null references public.game_rooms(code) on delete cascade,scope text not null,slot text not null,kind text not null,actor text not null,data jsonb not null default '{}'::jsonb,created_at timestamptz not null default clock_timestamp(),primary key(room,scope,slot));
+alter table public.game_rooms enable row level security; alter table public.game_room_members enable row level security; alter table public.game_room_actions enable row level security;
+drop policy if exists "turn rooms read" on public.game_rooms; create policy "turn rooms read" on public.game_rooms for select to anon using(true);
+drop policy if exists "turn members read" on public.game_room_members; create policy "turn members read" on public.game_room_members for select to anon using(true);
+drop policy if exists "turn actions read" on public.game_room_actions; create policy "turn actions read" on public.game_room_actions for select to anon using(true);
+create or replace function public.create_turn_room(p_code text,p_host text) returns void language plpgsql security definer set search_path=public as $$begin insert into game_rooms(code,host_id) values(upper(p_code),p_host);insert into game_room_members(room,member_id,seat) values(upper(p_code),p_host,0);end$$;
+create or replace function public.join_turn_room(p_room text,p_member text) returns void language plpgsql security definer set search_path=public as $$declare next_seat integer; state text;begin select status into state from game_rooms where code=upper(p_room) for update;if state is null then raise exception 'That room does not exist.';end if;if exists(select 1 from game_room_members where room=upper(p_room) and member_id=p_member) then return;end if;if state<>'lobby' then raise exception 'This season has already started.';end if;select min(s) into next_seat from generate_series(0,3)s where not exists(select 1 from game_room_members where room=upper(p_room) and seat=s);if next_seat is null then raise exception 'This room is full.';end if;insert into game_room_members(room,member_id,seat) values(upper(p_room),p_member,next_seat);update game_rooms set updated_at=clock_timestamp() where code=upper(p_room);end$$;
+create or replace function public.update_turn_member(p_room text,p_member text,p_name text,p_ready boolean default null) returns void language plpgsql security definer set search_path=public as $$begin perform 1 from game_rooms where code=upper(p_room) and status='lobby' for update;if not found then raise exception 'The lobby is no longer available.';end if;update game_room_members set name=coalesce(nullif(trim(left(p_name,22)),''),name),ready=coalesce(p_ready,ready) where room=upper(p_room) and member_id=p_member;if not found then raise exception 'You are not in this room.';end if;update game_rooms set updated_at=clock_timestamp() where code=upper(p_room);end$$;
+create or replace function public.start_turn_room(p_room text,p_host text) returns void language plpgsql security definer set search_path=public as $$begin perform 1 from game_rooms where code=upper(p_room) and host_id=p_host and status='lobby' for update;if not found then raise exception 'Only the host can start this room.';end if;if exists(select 1 from game_room_members where room=upper(p_room) and(not ready or name=''))then raise exception 'Every coach must be named and ready.';end if;update game_rooms set status='started',updated_at=clock_timestamp() where code=upper(p_room);end$$;
+create or replace function public.append_turn_action(p_room text,p_actor text,p_scope text,p_slot text,p_kind text,p_data jsonb default '{}'::jsonb) returns boolean language plpgsql security definer set search_path=public as $$declare host text; inserted_count integer;begin select host_id into host from game_rooms where code=upper(p_room) and status='started' for update;if host is null then raise exception 'This season is not active.';end if;if not exists(select 1 from game_room_members where room=upper(p_room) and member_id=p_actor)then raise exception 'You are not a coach in this room.';end if;if p_kind not in('blind_decision','advance')then raise exception 'Unknown room action.';end if;if p_kind='advance' and p_actor<>host then raise exception 'Only the host can advance the shared screen.';end if;if p_kind='advance' and (select count(*) from game_room_actions where room=upper(p_room) and scope=p_scope and kind='blind_decision')<>(select count(*) from game_room_members where room=upper(p_room)) then raise exception 'Every coach must decide before the result can be locked.';end if;insert into game_room_actions(room,scope,slot,kind,actor,data) values(upper(p_room),p_scope,p_slot,p_kind,p_actor,coalesce(p_data,'{}')) on conflict do nothing;get diagnostics inserted_count=row_count;update game_rooms set updated_at=clock_timestamp() where code=upper(p_room);return inserted_count>0;end$$;
+grant execute on function public.create_turn_room(text,text),public.join_turn_room(text,text),public.update_turn_member(text,text,text,boolean),public.start_turn_room(text,text),public.append_turn_action(text,text,text,text,text,jsonb) to anon;

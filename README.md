@@ -1,6 +1,6 @@
 # Turn
 
-A private, Voice-inspired coach simulator with local and Supabase-backed multiplayer rooms.
+A private, Voice-inspired coach simulator rebuilt around atomic multiplayer actions.
 
 ## Publish with GitHub Pages
 
@@ -14,14 +14,14 @@ The live game reads `ContestantsList.xlsx` whenever a new season begins. Update 
 
 ## Multiplayer setup
 
-The game uses Supabase for private rooms, locked Blind Audition choices, and chat. Run the SQL in `MULTIPLAYER_SETUP.md`, `SUPABASE_BLIND_FIX.sql`, and `SUPABASE_LOBBY_SYNC.sql` once in your Supabase SQL Editor before using multiplayer.
+Run `SUPABASE_LOBBY_SYNC.sql` once in your Supabase SQL Editor before using multiplayer. It is the rebuilt database setup; prior snapshot-sync migrations are no longer used.
 
 GitHub Pages is static hosting. No Netlify functions or build command are required.
 
 ## Project structure
 
-- `index.html` contains the game interface and season gameplay.
+- `index.html` contains the rebuilt lobby and synchronized game client.
 - `scripts/config.js` contains the browser-safe Supabase project configuration.
-- `scripts/multiplayer-lobby.js` owns lobby readiness, host start, and the guest transition into a started room.
+- `SUPABASE_LOBBY_SYNC.sql` contains the transactional room, membership, and action-log API.
 
 The Supabase anon key is intentionally public for this static browser app; access is limited by the row-level-security policies in the setup SQL.
