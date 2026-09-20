@@ -17,3 +17,11 @@ The live game reads `ContestantsList.xlsx` whenever a new season begins. Update 
 The game uses Supabase for private rooms, locked Blind Audition choices, and chat. Run the SQL in `MULTIPLAYER_SETUP.md` and `SUPABASE_BLIND_FIX.sql` once in your Supabase SQL Editor before using multiplayer.
 
 GitHub Pages is static hosting. No Netlify functions or build command are required.
+
+## Project structure
+
+- `index.html` contains the game interface and season gameplay.
+- `scripts/config.js` contains the browser-safe Supabase project configuration.
+- `scripts/multiplayer-lobby.js` owns lobby readiness, host start, and the guest transition into a started room.
+
+The Supabase anon key is intentionally public for this static browser app; access is limited by the row-level-security policies in the setup SQL.

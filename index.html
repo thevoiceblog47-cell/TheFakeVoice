@@ -43,6 +43,7 @@ body.room-chat-open{padding-right:340px}.room-chat-open .shell{max-width:1380px;
 <section id="spotifyView" hidden><div class="hero"><div><p class="eyebrow">Streaming pulse</p><h1>Spotify Charts.</h1><p>Weekly streaming totals are a noisy glimpse of audience enthusiasm—not a vote count.</p></div></div><div class="spotify-stack" id="spotifyCharts"><section class="card section-card"><h2>No charts yet.</h2><p class="copy">The first chart arrives after the Live Playoffs performances.</p></section></div></section>
 <section id="trackerView" hidden><div class="hero"><div><p class="eyebrow">Season 01 archive</p><h1>Season tracker.</h1><p>Every chair turn, matchup, performance, save, and elimination.</p></div></div><section class="card wiki-wrap"><div class="wiki-title">Blind auditions</div><table class="wiki-history"><thead><tr><th>Order</th><th>Artist</th><th>Age</th><th>Hometown</th><th>Genre</th><th id="userHead">You</th><th id="coachHead1">Lena</th><th id="coachHead2">Marcus</th><th id="coachHead3">Ivy</th></tr></thead><tbody id="auditionRows"></tbody></table></section><section class="card wiki-wrap" style="margin-top:18px"><div class="wiki-title">The Battles</div><table class="wiki-history"><thead><tr><th>Coach</th><th>Order</th><th>Winner</th><th>Loser</th><th id="stealHead">Team You</th><th id="stealHead1">Team Lena</th><th id="stealHead2">Team Marcus</th><th id="stealHead3">Team Ivy</th></tr></thead><tbody id="battleRows"></tbody></table></section><section class="card wiki-wrap" style="margin-top:18px"><div class="wiki-title">The Knockouts</div><table class="wiki-history"><thead><tr><th>Coach</th><th>Order</th><th>Winner</th><th>Loser</th><th id="koStealHead0">Team You</th><th id="koStealHead1">Team Lena</th><th id="koStealHead2">Team Marcus</th><th id="koStealHead3">Team Ivy</th></tr></thead><tbody id="knockoutRows"></tbody></table></section><div class="live-tracker-stack" id="liveTrackerSections"><section class="card wiki-wrap live-week-box"><div class="wiki-title">Live Playoffs</div><table class="wiki-history"><tbody><tr><td>Live-show results will appear here.</td></tr></tbody></table></section></div><section class="card wiki-wrap live-grid-title"><div class="wiki-title">Live show results per week</div><table class="wiki-history live-results-grid" id="liveResultsGrid"><tbody><tr><td>Results grid will update when the Live Playoffs begin.</td></tr></tbody></table></section></section>
 </main><aside class="chat-panel hidden" id="chatPanel"><div class="chat-head"><b>Room chat</b><button id="chatClose">×</button></div><div class="chat-messages" id="chatMessages"></div><form id="chatForm"><input id="chatInput" maxlength="280" placeholder="Say something…" autocomplete="off"><button class="btn">SEND</button></form></aside><div class="toast" id="toast"></div>
+<script src="scripts/config.js"></script>
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],shuffle=a=>[...a].sort(()=>Math.random()-.5),pick=a=>a[Math.floor(Math.random()*a.length)];
 const first=['Maya','Julian','Dani','Sloane','Noah','Elena','Micah','Avery','Rae','Kai','Wren','Tessa','Jordan','Nia','Caleb','Sasha','Theo','Marin','Drew','Isla','Leo','Camille','Owen','Zara','Miles','Priya','Grant','Lola','Eli','Simone','Bennett','Iris','Carmen','Parker','Dylan','June','Asher','Mina','Rowan','Sadie','Cole','Imani','Finn','Lena','Jace','Mara','Nico','Sienna','Reed','Asha','Blake','Gia','Hudson','Nora','Milo','Sage','Tate','Quinn','Mabel','Rory','Vera','Atlas','Skye','Eden'];
@@ -157,8 +158,8 @@ const originalFinishBattles=finishBattles;
 finishBattles=function(){originalFinishBattles();if(playerCount===0){$('#beginKnockouts').textContent='START KNOCKOUTS →';$('#battleComplete .copy').textContent='Every team is set. Watch the Knockouts begin.'}};
 function switchView(v){$$('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));['game','contestants','teams','spotify','tracker'].forEach(x=>$(`#${x}View`).hidden=x!==v)}
 /* PRIVATE ROOM CONFIGURATION — paste these two public Supabase values after completing the setup below. */
-const SUPABASE_URL='https://xudayjamephscnvketgb.supabase.co';
-const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZGF5amFtZXBoc2NudmtldGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4Nzg5NTgsImV4cCI6MjEwNTQ1NDk1OH0.1RbU5RqL_pnd8iNaQa-pfUCji-_sT0a6qVj1cf5dPyM';
+const SUPABASE_URL=window.VOICE_CONFIG.supabaseUrl;
+const SUPABASE_ANON_KEY=window.VOICE_CONFIG.supabaseAnonKey;
 let roomCode='',roomLastUpdate='',roomSyncTimer=null,roomSaveTimer=null,roomSeats=[],localSeat=null;
 const clientId=localStorage.getItem('turn-client-id')||crypto.randomUUID();localStorage.setItem('turn-client-id',clientId);
 const roomKeys=['coachName','cpuCoachNames','playerCount','coaches','artists','teams','auditions','auditionIndex','auditionOrder','pending','blindRound','userPairs','pairDraft','selected','battleQueue','battleIndex','battleLog','userSteals','cpuSteals','koPairs','koPairDraft','koSelected','koQueue','koIndex','koLog','userKoSteals','cpuKoSteals','playoffData','playoffOrder','playoffIndex','playoffReveals','playoffRevealIndex','playoffPublic','playoffPublicIndex','liveLog','spotifyLog','liveWeek','liveEntries','liveIndex','liveStep','liveBottom','liveSafe','liveSafeIndex','finaleRanked','battlePairingsByCoach','knockoutPairingsByCoach','pairingCoach','stealResponses','roomSeats'];
@@ -258,54 +259,6 @@ $('#chatToggle').onclick=()=>{let open=document.body.classList.toggle('room-chat
 /* Solo play announces the winner before asking about steals. */
 const multiplayerBattleResolve=resolveBattle;resolveBattle=function(chosen){if(onlineRoom())return multiplayerBattleResolve(chosen);let b=battleQueue[battleIndex],winner=isHuman(b.coach)?(b.a.id===chosen?b.a:b.b):(b.aPerformance+Math.random()*12>b.bPerformance+Math.random()*12?b.a:b.b),loser=winner===b.a?b.b:b.a;recordRoundScore(b.a,'Battles',b.aPerformance);recordRoundScore(b.b,'Battles',b.bPerformance);loser.status='battle-elim';let entry={...b,winner,loser,outcome:'',stealers:[]};battleLog.push(entry);$('#versus').innerHTML=fighter(b.a,b.aPerformance,b.aComment)+'<div class="vs">VS</div>'+fighter(b.b,b.bPerformance,b.bComment);$('#battleResolution').innerHTML=`<div class="result-banner"><p class="eyebrow">Battle result</p><h2>${winner.name} wins the Battle.</h2><p class="copy">${loser.name} is now available to steal.</p><button class="btn" id="continueToSteals">CONTINUE TO STEAL DECISIONS →</button></div>`;$('#continueToSteals').onclick=()=>beginSharedSteal(loser,entry,'battle')}
 $('#enterBtn').onclick=async()=>{let button=$('#enterBtn');button.disabled=true;button.textContent='LOADING ROSTER…';await rosterReady;if(contestantRoster.length<48){button.disabled=false;button.textContent='START THE SEASON →';alert('The contestant spreadsheet could not be loaded.');return}let clean=id=>($(id).value.trim()||$(id).placeholder||'Coach').slice(0,22);playerCount=+$('#playerCount').value;coachName=clean('#coachName');cpuCoachNames=[clean('#cpuCoach1'),clean('#cpuCoach2'),clean('#cpuCoach3')];$('#startScreen').classList.add('hidden');$('#app').hidden=false;resetGame();button.disabled=false;button.textContent='START THE SEASON →'}
-let lobbyWatchTimer=null;
-let roomStartInFlight=false;
-function enterStartedRoom(state){
-  if(!state?.roomStarted)return false;
-  hydrateRoom(state);
-  $('#roomLobby').classList.add('hidden');
-  $('#startScreen').classList.add('hidden');
-  $('#app').hidden=false;
-  $('#chatToggle').classList.remove('hidden');
-  activateChatSidebar();
-  setRoomStatus(`Team ${coaches[localSeat]} · live`);
-  if(lobbyWatchTimer!==null){clearInterval(lobbyWatchTimer);lobbyWatchTimer=null}
-  return true;
-}
-async function startOnlineSeason(){
-  let allReady=roomMembers.length>0&&roomMembers.every(member=>member.ready&&member.name);
-  if(!allReady||roomHost!==clientId||roomStartInFlight)return;
-  roomStartInFlight=true;
-  try{
-    await rosterReady;
-    roomStarted=true;
-    playerCount=roomMembers.length;
-    let defaults=['Lena','Marcus','Ivy','Nova'];
-    coaches=Array.from({length:4},(_,seat)=>roomMembers.find(member=>member.seat===seat)?.name||defaults[seat]);
-    coachName=coaches[0];cpuCoachNames=coaches.slice(1);
-    roomSeats=Array(4).fill(null);roomMembers.forEach(member=>roomSeats[member.seat]=member.id);
-    resetGame();
-    await saveRoom();
-    let confirmation=await fetchRoom(roomCode);
-    if(!enterStartedRoom(confirmation.state)){
-      roomStarted=false;renderStableLobby();toast('The room did not start. Please try again.');
-      return;
-    }
-    roomLastUpdate=confirmation.updated_at;
-  }catch(error){
-    roomStarted=false;renderStableLobby();toast('The room could not start. Please try again.');console.warn(error);
-  }finally{roomStartInFlight=false}
-}
-async function watchLobbyStart(){
-  if(!roomCode||roomStarted)return;
-  try{
-    let row=await fetchRoom(roomCode);
-    if(row.state?.roomStarted===true){roomLastUpdate=row.updated_at;enterStartedRoom(row.state)}
-    else roomLastUpdate=row.updated_at;
-  }catch(error){console.warn(error)}
-}
-const initialStableLobby=renderStableLobby;renderStableLobby=function(){initialStableLobby();$('#lobbyStart').onclick=startOnlineSeason;if(lobbyWatchTimer===null)lobbyWatchTimer=setInterval(watchLobbyStart,700)};showRoomLobby=renderStableLobby;
-const directLobbyHydrate=hydrateRoom;hydrateRoom=function(state){directLobbyHydrate(state);if(state.roomStarted===true){$('#roomLobby').classList.add('hidden');$('#startScreen').classList.add('hidden');$('#app').hidden=false;if(lobbyWatchTimer!==null){clearInterval(lobbyWatchTimer);lobbyWatchTimer=null}}}
 /* Do not let a delayed lobby click overwrite the host's newer start state. */
 const preLobbyQueueSave=queueRoomSave;queueRoomSave=function(){if(onlineRoom()&&roomStarted===false)return;preLobbyQueueSave()}
 /* CPU-only steal decisions resolve automatically; wait screens are reserved for humans. */
@@ -315,4 +268,5 @@ const onlineKnockoutResolve=resolveKnockout;resolveKnockout=function(choice){let
 const onlineContinueBattle=continueBattle;continueBattle=function(entry,stealers){onlineContinueBattle(entry,stealers);if(onlineRoom())$('#nextBattle').onclick=()=>{battleIndex++;stealResponses=null;showBattle();saveRoom()}}
 const onlineContinueKnockout=continueKnockout;continueKnockout=function(entry){onlineContinueKnockout(entry);if(onlineRoom())$('#nextKo').onclick=()=>{koIndex++;stealResponses=null;showKnockout();saveRoom()}}
 </script>
+<script src="scripts/multiplayer-lobby.js"></script>
 </body></html>
