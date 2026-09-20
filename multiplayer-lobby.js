@@ -2,6 +2,27 @@
 let lobbyWatchTimer = null;
 let roomStartInFlight = false;
 
+async function saveLobbyMember(changes) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_room_member`, {
+    method: 'POST',
+    headers: roomHeaders(),
+    body: JSON.stringify({
+      p_room: roomCode,
+      p_member_id: clientId,
+      p_name: changes.name ?? null,
+      p_ready: changes.ready ?? null
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('The lobby sync service is unavailable. Run SUPABASE_LOBBY_SYNC.sql in Supabase, then refresh the game.');
+  }
+
+  const [room] = await response.json();
+  roomLastUpdate = room.updated_at;
+  hydrateRoom(room.state);
+}
+
 function enterStartedRoom(state) {
   if (!state?.roomStarted) return false;
   hydrateRoom(state);
@@ -70,6 +91,27 @@ async function watchLobbyStart() {
 const initialStableLobby = renderStableLobby;
 renderStableLobby = function renderStableLobbyWithStartHandler() {
   initialStableLobby();
+  const me = roomMembers.find(member => member.id === clientId);
+  $('#lobbySaveName').onclick = async () => {
+    if (!me) return;
+    try {
+      await saveLobbyMember({ name: cleanCoachName($('#lobbyName').value, me.seat), ready: false });
+      renderStableLobby();
+    } catch (error) {
+      toast('Could not save your lobby details.');
+      console.warn(error);
+    }
+  };
+  $('#lobbyReady').onclick = async () => {
+    if (!me?.name) return;
+    try {
+      await saveLobbyMember({ ready: true });
+      renderStableLobby();
+    } catch (error) {
+      toast('Could not mark you ready.');
+      console.warn(error);
+    }
+  };
   $('#lobbyStart').onclick = startOnlineSeason;
   if (lobbyWatchTimer === null) lobbyWatchTimer = setInterval(watchLobbyStart, 700);
 };

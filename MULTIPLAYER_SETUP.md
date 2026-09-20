@@ -59,12 +59,13 @@ create policy "blind decisions can be recorded"
 on public.game_decisions for insert to anon with check (true);
 ```
 
-3. In **Project Settings → API**, copy the **Project URL** and the **anon public** key. Do not use the `service_role` key.
-4. In `index.html`, near the bottom, replace the two empty values:
+3. Also run the contents of `SUPABASE_BLIND_FIX.sql` and `SUPABASE_LOBBY_SYNC.sql`. The latter is required so simultaneous lobby updates do not overwrite each other.
+4. In **Project Settings → API**, copy the **Project URL** and the **anon public** key. Do not use the `service_role` key.
+5. In `scripts/config.js`, replace the two values:
 
 ```js
-const SUPABASE_URL='https://your-project.supabase.co';
-const SUPABASE_ANON_KEY='your-anon-public-key';
+supabaseUrl: 'https://your-project.supabase.co',
+supabaseAnonKey: 'your-anon-public-key'
 ```
 
 The anon key is intentionally safe to ship in a browser app. The table stores only game state. Treat room links like an invite: anyone with one can open and advance that room.
