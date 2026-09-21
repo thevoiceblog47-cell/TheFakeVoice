@@ -350,6 +350,9 @@ queueRoomSave=function(){if(!onlineRoom())queueRoomSaveBeforeAtomicBlindFlow()};
  * announced before steals open, and no CPU can ever leave the room waiting.
  */
 function roundSeats(){return Array.from({length:playerCount},(_,k)=>k)}
+/* Shared confirmations exist only in a private room. Local play keeps the
+   coach's real choices, but never asks for multiplayer-style acknowledgements. */
+function roundCheckpointSeats(){return onlineRoom()?roundSeats():[]}
 function roundKey(round){return round==='battle'?'battle':'knockout'}
 function roundTarget(round){return round==='battle'?'#battleResolution':'#koResolution'}
 function roundQueue(round){return round==='battle'?battleQueue:koQueue}
@@ -381,7 +384,7 @@ function renderRound(round){
     }
     if(!flow.human?.length){
       applyStealResult(round,flow.entry);
-      flow.stage='show-steal';flow.required=roundSeats();flow.ready=[];
+      flow.stage='show-steal';flow.required=roundCheckpointSeats();flow.ready=[];
       if(!flow.required.length){revealSteal(round);return}
     }else flow.stage='steal-choice';
   }
@@ -440,7 +443,7 @@ async function resolveRoundWinner(round,chosen){
   let result={...entry,winner,loser,stealers:[],outcome:''};
   (round==='battle'?battleLog:koLog).push(result);
   /* A human coach has already seen their own choice; everybody else reveals it. */
-  let required=isHuman(entry.coach)?roundSeats().filter(k=>k!==entry.coach):roundSeats();
+  let required=onlineRoom()?(isHuman(entry.coach)?roundSeats().filter(k=>k!==entry.coach):roundSeats()):[];
   roundFlow={round,stage:'show-winner',entry:result,required,ready:[]};
   renderAll();
   if(!required.length)announceWinner(round);else{renderShowWinner(round,roundFlow);saveRoundState()}
@@ -488,14 +491,14 @@ function announceWinner(round){
   /* CPU choices resolve immediately.  "Show Steal" is only a reveal gate. */
   if(eligible.length){
     applyStealResult(round,entry);
-    roundFlow={round,stage:'show-steal',entry,required:roundSeats(),ready:[]};
+    roundFlow={round,stage:'show-steal',entry,required:roundCheckpointSeats(),ready:[]};
     if(!roundFlow.required.length)revealSteal(round);else{renderShowSteal(round,roundFlow);saveRoundState()}
     return;
   }
   entry.outcome=`${entry.loser.name} was not stolen and is eliminated.`;
   entry.stealResolved=true;
   roundFlow={round,stage:'reveal',entry,ready:[]};
-  renderStealReveal(round,roundFlow);renderAll();saveRoundState();
+  revealSteal(round);
 }
 function openRoundSteals(round){announceWinner(round)}
 function renderShowSteal(round,flow){
@@ -526,7 +529,13 @@ function syncRoundTrackerEntry(round,entry){
 function revealSteal(round){
   let entry=roundFlow?.entry;if(!entry)return;
   roundFlow={round,stage:'reveal',entry,ready:[]};
-  renderStealReveal(round,roundFlow);renderAll();saveRoundState();
+  renderStealReveal(round,roundFlow);renderAll();
+  if(!onlineRoom()){
+    let revealedFlow=roundFlow;
+    setTimeout(()=>{if(roundFlow===revealedFlow)advanceRound(round)},900);
+    return;
+  }
+  saveRoundState();
 }
 function renderStealChoices(round,flow){
   let target=roundTarget(round),entry=flow.entry,ready=flow.ready||[];
@@ -552,10 +561,9 @@ function resolveRoundSteals(round){
   applyStealResult(round,entry);revealSteal(round);
 }
 function renderStealReveal(round,flow){
-  let target=roundTarget(round),entry=flow.entry,humans=roundSeats(),ready=flow.ready||[];
-  $(target).innerHTML=`<div class="result-banner"><p class="eyebrow">Steal decision revealed</p><h2>${entry.winner.name} wins the ${roundName(round)}.</h2>${entry.stealers.length?`<div class="coach-list">${coaches.map((coach,k)=>`<div class="coach-chip ${entry.stealers.includes(k)?'on':''} ${entry.stealWinner===k?'chosen':''}"><b>${entry.stealers.includes(k)?'✓':'—'}</b>Team ${coach}</div>`).join('')}</div>`:''}<p>${entry.outcome}</p><div class="human-decision-grid">${roundPlayerCards(humans,(k,mine)=>`<section class="human-decision ${ready.includes(k)?'decided':''}"><b>Team ${coaches[k]}</b>${mine&&!ready.includes(k)?`<button class="btn" data-next-round="${k}">ADVANCE TO NEXT ${roundName(round).toUpperCase()}</button>`:`<small>${ready.includes(k)?'Ready ✓':'Waiting for this coach'}</small>`}</section>`)}</div>${!humans.length?`<button class="btn" id="nextRound">NEXT ${roundName(round).toUpperCase()} →</button>`:''}</div>`;
+  let target=roundTarget(round),entry=flow.entry,humans=onlineRoom()?roundSeats():[],ready=flow.ready||[];
+  $(target).innerHTML=`<div class="result-banner"><p class="eyebrow">Steal decision revealed</p><h2>${entry.winner.name} wins the ${roundName(round)}.</h2>${entry.stealers.length?`<div class="coach-list">${coaches.map((coach,k)=>`<div class="coach-chip ${entry.stealers.includes(k)?'on':''} ${entry.stealWinner===k?'chosen':''}"><b>${entry.stealers.includes(k)?'✓':'—'}</b>Team ${coach}</div>`).join('')}</div>`:''}<p>${entry.outcome}</p>${onlineRoom()?`<div class="human-decision-grid">${roundPlayerCards(humans,(k,mine)=>`<section class="human-decision ${ready.includes(k)?'decided':''}"><b>Team ${coaches[k]}</b>${mine&&!ready.includes(k)?`<button class="btn" data-next-round="${k}">ADVANCE TO NEXT ${roundName(round).toUpperCase()}</button>`:`<small>${ready.includes(k)?'Ready ✓':'Waiting for this coach'}</small>`}</section>`)}</div>`:'<p class="copy">Preparing the next matchup…</p>'}</div>`;
   $$('[data-next-round]').forEach(button=>button.onclick=()=>acknowledgeNextRound(round,+button.dataset.nextRound));
-  if($('#nextRound'))$('#nextRound').onclick=()=>advanceRound(round);
 }
 async function acknowledgeNextRound(round,k){
   if(!myRoundSeat(k)||roundFlow?.stage!=='reveal')return;
@@ -650,6 +658,21 @@ async function forceRoundEnd(){
 $('#debugMenuToggle').onclick=()=>$('#debugMenu').classList.toggle('hidden');
 $$('[data-debug-start]').forEach(button=>button.onclick=()=>startDebugRound(button.dataset.debugStart));
 $('#forceRoundEnd').onclick=forceRoundEnd;
+
+/* A fresh season is always local. In particular, leaving an old shared game
+   must not keep its room code or live connection attached to the new one. */
+function leaveRoomForLocalSeason(){
+  stopRoomSync();roomCode='';roomLastUpdate='';roomSeats=[];localSeat=null;
+  roomMembers=[];roomStarted=true;roomHost='';
+  history.replaceState({},'',location.pathname+location.hash);
+  $('#roomStatus').classList.add('hidden');$('#chatToggle').classList.add('hidden');
+  $('#app').classList.remove('chat-open');$('#chatPanel').classList.add('hidden');
+}
+const localSeasonSetup=openCoachSetup;
+function startLocalSeasonSetup(){leaveRoomForLocalSeason();localSeasonSetup()}
+$('#startBtn').onclick=startLocalSeasonSetup;
+$('#customizeBtn').onclick=startLocalSeasonSetup;
+$('#restart').onclick=()=>{leaveRoomForLocalSeason();$('#app').hidden=true;$('#startScreen').classList.remove('hidden');$('#intro').classList.add('hidden');$('#menu').classList.remove('hidden')};
 
 /* Shared result-show controller. Performance screens intentionally stay local. */
 const localStartPlayoffResults=startPlayoffResults,localStartLiveResults=startLiveResults,localStartLiveShows=startLiveShows;
