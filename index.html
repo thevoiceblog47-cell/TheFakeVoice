@@ -104,8 +104,17 @@ function trackerEntriesFor(round){
 function renderLiveTracker(){
   let rounds=['Live Playoffs',...liveRounds.map(x=>x.name)],played=rounds.map(trackerEntriesFor),groups=rounds.map((round,i)=>({round,entries:played[i]})).filter(x=>x.entries.length),sections=$('#liveTrackerSections');
   sections.innerHTML=groups.length?groups.map(({round,entries})=>`<section class="card wiki-wrap live-week-box"><div class="wiki-title">${round==='Live Playoffs'?'Live Playoffs':`${round} · Live Show`}</div><table class="wiki-history"><thead><tr><th>Coach</th><th>Order</th><th>Artist</th><th>Result</th></tr></thead><tbody>${[...entries].sort((a,b)=>a.order-b.order).map(x=>`<tr class="${x.result==='Eliminated'?'eliminated-row':''}"><td>Team ${coaches[x.artist.current]}</td><td>${x.order}</td><td><b>${x.artist.name}</b></td><td class="${liveResultClass(x.result)}">${x.result}</td></tr>`).join('')}</tbody></table></section>`).join(''):'<section class="card wiki-wrap live-week-box"><div class="wiki-title">Live Playoffs</div><table class="wiki-history"><tbody><tr><td>Live-show results will appear here.</td></tr></tbody></table></section>';
-  let participants=[...new Map(played.flat().map(x=>[x.artist.id,x.artist])).values()];
-  participants.sort((a,b)=>a.name.localeCompare(b.name));
+  let participants=[...new Map(played.flat().map(x=>[x.artist.id,x.artist])).values()],eliminationRound=artist=>rounds.findIndex((round,i)=>played[i].some(x=>x.artist.id===artist.id&&x.result==='Eliminated'));
+  /* Wikipedia-style order: continuing artists at the top, then the newest
+     eliminations down to the earliest eliminations at the bottom. */
+  participants.sort((a,b)=>{
+    let aEliminated=eliminationRound(a),bEliminated=eliminationRound(b);
+    if(aEliminated<0&&bEliminated>=0)return-1;
+    if(bEliminated<0&&aEliminated>=0)return 1;
+    if(aEliminated>=0&&bEliminated>=0)return bEliminated-aEliminated||a.name.localeCompare(b.name);
+    let placements={first:0,second:1,third:2};
+    return (placements[a.status]??9)-(placements[b.status]??9)||a.name.localeCompare(b.name);
+  });
   $('#liveResultsGrid').innerHTML=participants.length?`<thead><tr><th>Artist</th>${rounds.map(round=>`<th>${round==='Live Playoffs'?'Week 1 Playoffs':round}</th>`).join('')}</tr></thead><tbody>${participants.map(a=>{let eliminatedAt=rounds.findIndex((round,i)=>played[i].some(x=>x.artist.id===a.id&&x.result==='Eliminated')),cells=[];for(let i=0;i<rounds.length;i++){if(eliminatedAt===i){cells.push(`<td class="result-eliminated" colspan="${rounds.length-i}">Eliminated (${rounds[i]})</td>`);break}let entry=played[i].find(x=>x.artist.id===a.id);cells.push(entry?`<td class="${liveResultClass(entry.result)}">${entry.result}</td>`:'<td class="pending">—</td>')}return`<tr><td class="artist-cell"><i class="team-dot t${a.current}"></i>${a.name}</td>${cells.join('')}</tr>`}).join('')}</tbody>`:'<tbody><tr><td>Results grid will update when the Live Playoffs begin.</td></tr></tbody>';
 }
 function startPairing(){$('#blindArea').hidden=true;$('#phaseLabel').textContent='THE BATTLES';setStage('Battles');battlePairingsByCoach=coaches.map((_,k)=>isHuman(k)?[]:cpuGenrePairs(teams[k]).map(p=>p.map(a=>a.id)));if(playerCount===0){beginBattleShow();return}pairingCoach=0;beginHumanBattlePairing()}
