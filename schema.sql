@@ -286,3 +286,47 @@ end;
 $$;
 
 grant execute on function public.submit_live_checkpoint(text,text) to anon;
+
+-- The human playoff save is also a locked transition. The coach's selection
+-- creates the shared reveal checkpoint atomically, so it cannot be lost to a
+-- refresh or a simultaneous room update.
+create or replace function public.submit_live_save(p_room text,p_client text,p_artist integer) returns jsonb language plpgsql set search_path='' as $$
+declare s jsonb; f jsonb; seat integer; team integer; required jsonb; changed_at timestamptz; claimed boolean:=false;
+begin
+  select state into s from public.game_rooms where code=p_room for update;
+  if not found then raise exception 'Room not found'; end if;
+  select ordinality-1 into seat
+    from jsonb_array_elements_text(coalesce(s->'roomSeats','[]'::jsonb)) with ordinality as seats(member,ordinality)
+    where member=p_client limit 1;
+  if seat is null then raise exception 'You are not seated in this room'; end if;
+  f:=s->'liveFlow';
+  if f is null or f->>'mode'<>'playoff' or f->>'stage'<>'save-choice' then
+    raise exception 'No coach save is waiting for a decision';
+  end if;
+  team:=(f->>'team')::integer;
+  if seat<>team then raise exception 'Only this team''s coach can make the save'; end if;
+  if not exists (
+    select 1 from jsonb_array_elements(coalesce(s->'playoffData','[]'::jsonb)) as teams(roster),
+      jsonb_array_elements(teams.roster) as contestant(item)
+    where contestant.item->'artist'->>'id'=p_artist::text and (contestant.item->>'team')::integer=team and coalesce((contestant.item->>'public')::boolean,false)=false
+  ) then raise exception 'That artist is not eligible for this save'; end if;
+  select coalesce(jsonb_agg(n order by n),'[]'::jsonb) into required
+    from generate_series(0,greatest(coalesce((s->>'playerCount')::integer,1)-1,0)) as seats(n)
+    where n<>team;
+  f:=jsonb_set(f,'{stage}','"checkpoint"'::jsonb,true);
+  f:=jsonb_set(f,'{action}','"playoff-save"'::jsonb,true);
+  f:=jsonb_set(f,'{label}','"REVEAL RESULT"'::jsonb,true);
+  f:=jsonb_set(f,'{required}',required,true);
+  f:=jsonb_set(f,'{ready}','[]'::jsonb,true);
+  f:=jsonb_set(f,'{saveArtistId}',to_jsonb(p_artist),true);
+  if required='[]'::jsonb then
+    f:=jsonb_set(f,'{stage}','"executing"'::jsonb,true);
+    claimed:=true;
+  end if;
+  s:=jsonb_set(s,'{liveFlow}',f,true);
+  update public.game_rooms set state=s where code=p_room returning updated_at into changed_at;
+  return jsonb_build_object('state',s,'updated_at',changed_at,'claimed',claimed);
+end;
+$$;
+
+grant execute on function public.submit_live_save(text,text,integer) to anon;
