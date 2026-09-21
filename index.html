@@ -438,7 +438,7 @@ async function acknowledgeWinner(round,k){
     try{await submitRoundResponse('show_winner');}catch(error){console.warn(error);toast('Could not record Show Winner. Please try again.');return}finally{winnerAcknowledgementPending=false;}
   }else if(!roundFlow.ready.includes(k))roundFlow.ready.push(k);
   if(!roundFlow||roundFlow.round!==round||!['winner-choice','show-winner'].includes(roundFlow.stage))return;
-  if(roundFlow.winnerChosen&&roundFlow.required.every(seat=>roundFlow.ready.includes(seat)))announceWinner(round);else{renderShowWinner(round,roundFlow);saveRoundState()}
+  if(roundFlow.winnerChosen&&roundFlow.required.every(seat=>roundFlow.ready.includes(seat)))announceWinner(round);else renderShowWinner(round,roundFlow)
 }
 function announceWinner(round){
   let flow=roundFlow,entry=flow?.entry;
@@ -484,7 +484,7 @@ async function acknowledgeShowSteal(round,k){
     try{await submitRoundResponse('show_steal');}catch(error){console.warn(error);toast('Could not record Show Steal. Please try again.');return}
   }else if(!roundFlow.ready.includes(k))roundFlow.ready.push(k);
   if(!roundFlow||roundFlow.round!==round||roundFlow.stage!=='show-steal')return;
-  if(roundFlow.required.every(seat=>roundFlow.ready.includes(seat)))revealSteal(round);else{renderShowSteal(round,roundFlow);saveRoundState()}
+  if(roundFlow.required.every(seat=>roundFlow.ready.includes(seat)))revealSteal(round);else renderShowSteal(round,roundFlow)
 }
 function applyStealResult(round,entry){
   if(entry.stealResolved){syncRoundTrackerEntry(round,entry);return}
@@ -520,7 +520,7 @@ async function answerRoundSteal(round,k,wants){
     if(wants)flow.entry.stealers.push(k);
     flow.ready.push(k);
   }
-  if(flow.human.every(seat=>flow.ready.includes(seat))){applyStealResult(round,flow.entry);revealSteal(round)}else{renderStealChoices(round,flow);saveRoundState()}
+  if(flow.human.every(seat=>flow.ready.includes(seat))){applyStealResult(round,flow.entry);revealSteal(round)}else renderStealChoices(round,flow)
 }
 function resolveRoundSteals(round){
   let entry=roundFlow?.entry;if(!entry)return;
@@ -538,7 +538,7 @@ async function acknowledgeNextRound(round,k){
     try{await submitRoundResponse('next_round');}catch(error){console.warn(error);toast('Could not record your next-round confirmation. Please try again.');return}
   }else if(!roundFlow.ready.includes(k))roundFlow.ready.push(k);
   if(!roundFlow||roundFlow.round!==round||roundFlow.stage!=='reveal')return;
-  if(allRoundPlayersReady(roundFlow.ready))advanceRound(round);else{renderStealReveal(round,roundFlow);saveRoundState()}
+  if(allRoundPlayersReady(roundFlow.ready))advanceRound(round);else renderStealReveal(round,roundFlow)
 }
 function advanceRound(round){
   roundFlow=null;stealResponses=null;setRoundIndex(round,roundIndex(round)+1);saveRoundState();

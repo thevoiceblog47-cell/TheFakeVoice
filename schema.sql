@@ -170,12 +170,27 @@ begin
   if not found then raise exception 'Room not found'; end if;
   select exists(select 1 from jsonb_array_elements_text(coalesce(s->'roomSeats','[]'::jsonb)) as seats(member) where member=p_client) into member_exists;
   if not member_exists then raise exception 'You are not seated in this room'; end if;
-  if s->>'pending' is null then raise exception 'No result is waiting'; end if;
+  -- A second browser can finish the shared result gate just before this
+  -- request arrives. Return that newer room state instead of leaving the
+  -- player stranded behind an avoidable error.
+  if s->>'pending' is null then
+    return jsonb_build_object('state',s,'updated_at',(select updated_at from public.game_rooms where code=p_room));
+  end if;
   ready:=coalesce(s->'blindReady','[]'::jsonb);
   if not (ready @> jsonb_build_array(p_client)) then ready:=ready||jsonb_build_array(p_client); end if;
   s:=jsonb_set(s,'{blindReady}',ready,true);
-  select count(*) into expected_count from jsonb_array_elements_text(coalesce(s->'roomSeats','[]'::jsonb)) as seats(member) where member is not null;
-  select count(*) into ready_count from jsonb_array_elements_text(ready) as people(member);
+  -- A coach whose team is full is no longer taking part in Blind decisions.
+  -- Do not make the remaining coach wait on that finished team before the
+  -- next audition can be presented.
+  select count(*) into expected_count
+    from jsonb_array_elements_text(coalesce(s->'roomSeats','[]'::jsonb)) with ordinality as seats(member,ordinality)
+    where member is not null
+      and jsonb_array_length(coalesce(s->'teams'->((ordinality-1)::integer),'[]'::jsonb))<12;
+  select count(*) into ready_count
+    from jsonb_array_elements_text(coalesce(s->'roomSeats','[]'::jsonb)) with ordinality as seats(member,ordinality)
+    where member is not null
+      and jsonb_array_length(coalesce(s->'teams'->((ordinality-1)::integer),'[]'::jsonb))<12
+      and ready @> jsonb_build_array(member);
   update public.game_rooms set state=s where code=p_room returning updated_at into changed_at;
   if ready_count>=expected_count then return public.advance_blind_audition(p_room,p_client); end if;
   return jsonb_build_object('state',s,'updated_at',changed_at);
