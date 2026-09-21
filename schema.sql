@@ -247,3 +247,42 @@ end;
 $$;
 
 grant execute on function public.submit_round_response(text,text,text,boolean) to anon;
+
+-- Result-show checkpoints use the same row lock so every coach's reveal click
+-- is retained when they press together.
+create or replace function public.submit_live_checkpoint(p_room text,p_client text) returns jsonb language plpgsql set search_path='' as $$
+declare s jsonb; f jsonb; ready jsonb; required jsonb; seat integer; changed_at timestamptz; claimed boolean:=false;
+begin
+  select state into s from public.game_rooms where code=p_room for update;
+  if not found then raise exception 'Room not found'; end if;
+  select ordinality-1 into seat
+    from jsonb_array_elements_text(coalesce(s->'roomSeats','[]'::jsonb)) with ordinality as seats(member,ordinality)
+    where member=p_client limit 1;
+  if seat is null then raise exception 'You are not seated in this room'; end if;
+  f:=s->'liveFlow';
+  if f is null then raise exception 'No live result checkpoint is active'; end if;
+  -- A late click can arrive just after another coach claimed the transition.
+  -- Return the current state quietly; the caller will render the new result.
+  if f->>'stage'='executing' then
+    return jsonb_build_object('state',s,'updated_at',(select updated_at from public.game_rooms where code=p_room),'claimed',false);
+  end if;
+  if f->>'stage'<>'checkpoint' then raise exception 'No live result checkpoint is active'; end if;
+  required:=coalesce(f->'required','[]'::jsonb);
+  if not (required @> jsonb_build_array(seat)) then raise exception 'This coach is not required for this reveal'; end if;
+  ready:=coalesce(f->'ready','[]'::jsonb);
+  if not (ready @> jsonb_build_array(seat)) then ready:=ready||jsonb_build_array(seat); end if;
+  f:=jsonb_set(f,'{ready}',ready,true);
+  -- The final required click claims the transition. Only that client may
+  -- calculate and save the next result, so simultaneous browsers cannot
+  -- reveal the same result twice with conflicting random score updates.
+  if ready @> required then
+    f:=jsonb_set(f,'{stage}','"executing"'::jsonb,true);
+    claimed:=true;
+  end if;
+  s:=jsonb_set(s,'{liveFlow}',f,true);
+  update public.game_rooms set state=s where code=p_room returning updated_at into changed_at;
+  return jsonb_build_object('state',s,'updated_at',changed_at,'claimed',claimed);
+end;
+$$;
+
+grant execute on function public.submit_live_checkpoint(text,text) to anon;

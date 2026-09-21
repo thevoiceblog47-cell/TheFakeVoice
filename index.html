@@ -10,6 +10,7 @@
 .menu-customize{margin-top:10px;width:100%}.room-status{margin-left:12px;border:1px solid #6a2430;background:#250c12;color:#ffbdc5;border-radius:99px;padding:7px 11px;font-size:11px;font-weight:800;letter-spacing:.5px}.room-status button{margin-left:8px;border:0;background:transparent;color:#fff;text-decoration:underline;font:inherit;cursor:pointer}.chat-panel{position:fixed;right:22px;bottom:22px;width:min(380px,calc(100vw - 36px));height:480px;z-index:90;background:#151519;border:1px solid #4a2028;border-radius:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}.chat-head{padding:15px 17px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}.chat-head button{background:transparent;border:0;color:#fff;font-size:24px}.chat-messages{padding:14px;overflow:auto;flex:1;display:grid;align-content:start;gap:9px}.chat-message{background:#242429;border-radius:10px;padding:9px 11px;line-height:1.35;font-size:13px}.chat-message b{color:#ff8795;display:block;font-size:11px;margin-bottom:3px}.chat-panel form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}.chat-panel input{min-width:0;flex:1;background:#09090b;border:1px solid #44444b;border-radius:9px;color:#fff;padding:10px}.chat-panel .btn{padding:10px 12px}.topbar>#chatToggle{margin-left:8px;padding:8px 11px;font-size:11px}.app-content{min-width:0}.shell.chat-open{max-width:1380px;display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,380px);gap:18px;align-items:start}.shell.chat-open .chat-panel{position:sticky;top:0;right:auto;bottom:auto;width:auto;height:calc(100vh - 24px);z-index:10;box-shadow:none}.shell.chat-open .chat-panel.hidden{display:none!important}@media(max-width:850px){.shell.chat-open{display:block}.shell.chat-open .chat-panel{position:fixed;inset:14px 14px auto;width:auto;height:min(580px,calc(100vh - 28px));box-shadow:var(--shadow)}}
 </style>
 <style>
+@media(max-width:1200px){.shell.chat-open{display:block}.shell.chat-open .chat-panel{display:none!important}}
 .live-result-actions{min-height:52px}.live-result-actions .btn,#playoffPerform,#livePerform,#revealPlayoffVote{width:min(100%,420px);min-height:52px;display:inline-flex;align-items:center;justify-content:center;white-space:normal;text-align:center;line-height:1.15}
 .result-action-dock{position:sticky;top:10px;z-index:8;padding:10px 0;background:linear-gradient(var(--panel2),var(--panel2) 82%,transparent)}.single-reveal{min-height:66px}.fan-tweets{grid-column:1/-1;display:grid;gap:7px;margin-top:4px;text-align:left}.fan-tweets .eyebrow{margin:4px 0 1px}.tweet{padding:9px 11px;background:#17171b;border-left:3px solid var(--red2);border-radius:0 7px 7px 0;color:#d7d7dc;font-size:13px;line-height:1.35}.fighter .fan-tweets{margin-top:12px}.fighter .tweet{font-size:12px;padding:7px 8px}
 .battle-action-dock{min-height:108px;display:flex;align-items:flex-start;justify-content:center;margin:0 0 20px;position:sticky;top:12px;z-index:4}.battle-action-dock .result-banner,.battle-action-dock .steal-box{width:100%;margin:0;padding:17px}.battle-action-dock .result-banner>.btn,.battle-action-dock #nextBattle,.battle-action-dock #nextKo{width:280px;min-height:52px}.battle-action-dock .button-pair{max-width:580px;margin:0 auto 12px}.battle-action-dock .button-pair .btn{min-height:52px;white-space:nowrap}
@@ -48,7 +49,7 @@ const last=['Torres','Park','Brooks','Carter','Rivers','Cruz','Bell','Lane','Mon
 const genres=['Pop','R&B','Indie Folk','Country','Soul','Alternative','Latin Pop','Rock','Americana','Singer-Songwriter','Country Rock','Jazz','Dance Pop','Blues','Gospel','Funk','Reggae','Metal','Classical Crossover','EDM','Bluegrass','Hip-Hop','Musical Theatre','Folk Rock','Neo Soul'];
 const towns=['Miami, FL','Portland, OR','Tulsa, OK','Detroit, MI','Austin, TX','San Diego, CA','Nashville, TN','New York, NY','Asheville, NC','Chicago, IL','Seattle, WA','Lexington, KY','Philadelphia, PA','Atlanta, GA','Denver, CO','New Orleans, LA','Boston, MA','Phoenix, AZ','Minneapolis, MN','Kansas City, MO','Honolulu, HI','Cleveland, OH','Richmond, VA','Boise, ID','Santa Fe, NM','Milwaukee, WI','Burlington, VT','Birmingham, AL','Las Vegas, NV','Salt Lake City, UT','Brooklyn, NY','Spokane, WA','Dallas, TX','Houston, TX','Baltimore, MD','Charleston, SC','Savannah, GA','Orlando, FL','Tampa, FL','Jacksonville, FL','Charlotte, NC','Raleigh, NC','Columbus, OH','Cincinnati, OH','Indianapolis, IN','St. Louis, MO','Omaha, NE','Des Moines, IA','Madison, WI','Grand Rapids, MI','Pittsburgh, PA','Buffalo, NY','Rochester, NY','Providence, RI','Manchester, NH','Hartford, CT','Newark, NJ','Washington, DC','Louisville, KY','Memphis, TN','Little Rock, AR','Jackson, MS','Baton Rouge, LA','Oklahoma City, OK','Wichita, KS','Fargo, ND','Sioux Falls, SD','Billings, MT','Cheyenne, WY','Albuquerque, NM','El Paso, TX','Tucson, AZ','Fresno, CA','Sacramento, CA','Oakland, CA','San Jose, CA','Los Angeles, CA','Eugene, OR','Tacoma, WA','Anchorage, AK'];
 let contestantRoster=[];
-let coachName='Coach',cpuCoachNames=['Lena','Marcus','Ivy'],playerCount=1,coaches=[],artists=[],teams=[[],[],[],[]],auditions=[],auditionIndex=0,auditionOrder=[],pending=null,blindRound=null,blindReady=[],roundFlow=null,userPairs=[],pairDraft=[],selected=[],battleQueue=[],battleIndex=0,battleLog=[],userSteals=0,cpuSteals=[0,0,0,0],koPairs=[],koPairDraft=[],koSelected=[],koQueue=[],koIndex=0,koLog=[],userKoSteals=0,cpuKoSteals=[0,0,0,0],playoffData=[],playoffOrder=[],playoffIndex=0,playoffReveals=[],playoffRevealIndex=0,playoffPublic=[],playoffPublicIndex=0,liveLog=[],spotifyLog=[],liveWeek=0,liveEntries=[],liveIndex=0,liveStep='performance',liveBottom=[],liveSafe=[],liveSafeIndex=0,finaleRanked=[];
+let coachName='Coach',cpuCoachNames=['Lena','Marcus','Ivy'],playerCount=1,coaches=[],artists=[],teams=[[],[],[],[]],auditions=[],auditionIndex=0,auditionOrder=[],pending=null,blindRound=null,blindReady=[],roundFlow=null,liveFlow=null,userPairs=[],pairDraft=[],selected=[],battleQueue=[],battleIndex=0,battleLog=[],userSteals=0,cpuSteals=[0,0,0,0],koPairs=[],koPairDraft=[],koSelected=[],koQueue=[],koIndex=0,koLog=[],userKoSteals=0,cpuKoSteals=[0,0,0,0],playoffData=[],playoffOrder=[],playoffIndex=0,playoffReveals=[],playoffRevealIndex=0,playoffPublic=[],playoffPublicIndex=0,liveLog=[],spotifyLog=[],liveWeek=0,liveEntries=[],liveIndex=0,liveStep='performance',liveBottom=[],liveSafe=[],liveSafeIndex=0,finaleRanked=[];
 function isHuman(k){return k<playerCount}
 let battlePairingsByCoach=[[],[],[],[]],knockoutPairingsByCoach=[[],[],[],[]],pairingCoach=0,stealResponses=null;
 async function loadContestantSpreadsheet(){try{let res=await fetch('ContestantsList.xlsx',{cache:'no-store'});if(!res.ok)throw new Error('Roster spreadsheet not found');let book=XLSX.read(await res.arrayBuffer(),{type:'array'}),sheet=book.Sheets.Contestants;if(!sheet)throw new Error('Missing Contestants sheet');let rows=XLSX.utils.sheet_to_json(sheet,{defval:''}).filter(r=>String(r.Contestant||'').trim());contestantRoster=rows.map(r=>({name:String(r.Contestant).trim(),genre:String(r.Genre||'Pop').trim(),image:String(r['Image Link']||'').trim(),age:Number(r.Age)||null,hometown:String(r.Hometown||'').trim()||null,gender:String(r.Gender||'').trim()}));if(contestantRoster.length<48)throw new Error('The roster needs at least 48 contestants');console.info(`Loaded ${contestantRoster.length} contestants from spreadsheet.`)}catch(err){console.error(err);toast?.('Could not load ContestantsList.xlsx.');}}
@@ -56,7 +57,7 @@ const rosterReady=loadContestantSpreadsheet();
 function makeArtists(){return shuffle(contestantRoster.map((r,id)=>({id,name:r.name,age:r.age||18+Math.floor(Math.random()*33),genre:r.genre||'Pop',hometown:r.hometown||pick(towns),image:r.image,strength:45+Math.floor(Math.random()*51),momentum:0,streamBias:(Math.random()-.5)*22,roundScores:[],origin:null,current:null,status:'',stolen:false,departures:[]})));}
 function setStage(title){$('#roundLabel').textContent='';$('#heroTitle').textContent=title;$('#heroCopy').textContent=''}
 function updateCoachLabels(){['userHead','stealHead','koStealHead0'].forEach((id,i)=>$(`#${id}`).textContent=i?'Team '+coachName:coachName);[1,2,3].forEach(k=>{$(`#coachHead${k}`).textContent=coaches[k];$(`#stealHead${k}`).textContent='Team '+coaches[k];$(`#koStealHead${k}`).textContent='Team '+coaches[k]})}
-function resetGame(){coaches=[coachName,...cpuCoachNames];artists=makeArtists();teams=[[],[],[],[]];auditions=[];auditionIndex=0;auditionOrder=shuffle(artists);pending=null;blindReady=[];roundFlow=null;userPairs=[];selected=[];battleQueue=[];battleIndex=0;battleLog=[];userSteals=0;cpuSteals=[0,0,0,0];koPairs=[];koSelected=[];koQueue=[];koIndex=0;koLog=[];userKoSteals=0;cpuKoSteals=[0,0,0,0];playoffData=[];playoffOrder=[];playoffIndex=0;playoffReveals=[];playoffRevealIndex=0;liveLog=[];spotifyLog=[];liveWeek=0;liveEntries=[];liveBottom=[];liveSafe=[];liveSafeIndex=0;['pairingArea','battleArea','battleComplete','koPairingArea','knockoutArea','knockoutComplete','playoffArea','playoffComplete','liveArea','seasonComplete'].forEach(x=>$(`#${x}`).hidden=true);$('#blindArea').hidden=false;$('#phaseLabel').textContent='BLIND AUDITIONS';setStage('Blind Auditions');updateCoachLabels();renderAll();showAudition();}
+function resetGame(){coaches=[coachName,...cpuCoachNames];artists=makeArtists();teams=[[],[],[],[]];auditions=[];auditionIndex=0;auditionOrder=shuffle(artists);pending=null;blindReady=[];roundFlow=null;liveFlow=null;userPairs=[];selected=[];battleQueue=[];battleIndex=0;battleLog=[];userSteals=0;cpuSteals=[0,0,0,0];koPairs=[];koSelected=[];koQueue=[];koIndex=0;koLog=[];userKoSteals=0;cpuKoSteals=[0,0,0,0];playoffData=[];playoffOrder=[];playoffIndex=0;playoffReveals=[];playoffRevealIndex=0;liveLog=[];spotifyLog=[];liveWeek=0;liveEntries=[];liveBottom=[];liveSafe=[];liveSafeIndex=0;['pairingArea','battleArea','battleComplete','koPairingArea','knockoutArea','knockoutComplete','playoffArea','playoffComplete','liveArea','seasonComplete'].forEach(x=>$(`#${x}`).hidden=true);$('#blindArea').hidden=false;$('#phaseLabel').textContent='BLIND AUDITIONS';setStage('Blind Auditions');updateCoachLabels();renderAll();showAudition();}
 function initials(n){return n.split(' ').map(x=>x[0]).join('')}
 function artistAvatar(a){return a.image?`<img src="${a.image}" alt="${a.name}">`:initials(a.name)}
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2200)}
@@ -159,7 +160,7 @@ const SUPABASE_URL='https://xudayjamephscnvketgb.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZGF5amFtZXBoc2NudmtldGdiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4Nzg5NTgsImV4cCI6MjEwNTQ1NDk1OH0.1RbU5RqL_pnd8iNaQa-pfUCji-_sT0a6qVj1cf5dPyM';
 let roomCode='',roomLastUpdate='',roomSyncTimer=null,roomSaveTimer=null,roomSeats=[],localSeat=null;
 const clientId=localStorage.getItem('turn-client-id')||crypto.randomUUID();localStorage.setItem('turn-client-id',clientId);
-const roomKeys=['coachName','cpuCoachNames','playerCount','coaches','artists','teams','auditions','auditionIndex','auditionOrder','pending','blindRound','blindReady','roundFlow','userPairs','pairDraft','selected','battleQueue','battleIndex','battleLog','userSteals','cpuSteals','koPairs','koPairDraft','koSelected','koQueue','koIndex','koLog','userKoSteals','cpuKoSteals','playoffData','playoffOrder','playoffIndex','playoffReveals','playoffRevealIndex','playoffPublic','playoffPublicIndex','liveLog','spotifyLog','liveWeek','liveEntries','liveIndex','liveStep','liveBottom','liveSafe','liveSafeIndex','finaleRanked','battlePairingsByCoach','knockoutPairingsByCoach','pairingCoach','stealResponses','roomSeats'];
+const roomKeys=['coachName','cpuCoachNames','playerCount','coaches','artists','teams','auditions','auditionIndex','auditionOrder','pending','blindRound','blindReady','roundFlow','liveFlow','userPairs','pairDraft','selected','battleQueue','battleIndex','battleLog','userSteals','cpuSteals','koPairs','koPairDraft','koSelected','koQueue','koIndex','koLog','userKoSteals','cpuKoSteals','playoffData','playoffOrder','playoffIndex','playoffReveals','playoffRevealIndex','playoffPublic','playoffPublicIndex','liveLog','spotifyLog','liveWeek','liveEntries','liveIndex','liveStep','liveBottom','liveSafe','liveSafeIndex','finaleRanked','battlePairingsByCoach','knockoutPairingsByCoach','pairingCoach','stealResponses','roomSeats'];
 function onlineRoom(){return!!roomCode}
 function localCoach(k){return !onlineRoom()||localSeat===k}
 function roomReady(){return SUPABASE_URL.startsWith('https://')&&SUPABASE_ANON_KEY.length>20}
@@ -170,13 +171,18 @@ function currentScreen(){return ['blindArea','pairingArea','battleArea','battleC
 async function saveRoom(){if(!roomCode||!roomReady())return;try{let res=await fetch(`${SUPABASE_URL}/rest/v1/game_rooms?on_conflict=code`,{method:'POST',headers:roomHeaders({Prefer:'resolution=merge-duplicates,return=representation'}),body:JSON.stringify({code:roomCode,state:roomSnapshot(),updated_at:new Date().toISOString()})});if(!res.ok)throw new Error(await res.text());let out=await res.json();roomLastUpdate=out[0]?.updated_at||roomLastUpdate;setRoomStatus('Synced');}catch(e){setRoomStatus('Could not sync');console.warn(e)}}
 function queueRoomSave(){if(!roomCode)return;clearTimeout(roomSaveTimer);roomSaveTimer=setTimeout(saveRoom,180)}
 async function fetchRoom(code){let res=await fetch(`${SUPABASE_URL}/rest/v1/game_rooms?code=eq.${encodeURIComponent(code)}&select=state,updated_at`,{headers:roomHeaders()});if(!res.ok)throw new Error('Could not reach the room.');let rows=await res.json();if(!rows[0])throw new Error('That room does not exist.');return rows[0]}
-function hydrateRoom(state){roomKeys.forEach(k=>{if(k in state)eval(`${k}=state[k]`)});let byId=new Map(artists.map(a=>[a.id,a])),relink=x=>{if(Array.isArray(x))return x.map(relink);if(x&&typeof x==='object'){if(Number.isFinite(x.id)&&byId.has(x.id))return byId.get(x.id);let out={};Object.entries(x).forEach(([k,v])=>out[k]=relink(v));return out}return x};roomKeys.filter(k=>k!=='artists').forEach(k=>eval(`${k}=relink(${k})`));if(blindRound?.decisions)blindRound.decisions=new Set(blindRound.decisions);if(stealResponses?.pending)stealResponses.pending=new Set(stealResponses.pending);localSeat=roomSeats.findIndex(x=>x===clientId);renderAll();['blindArea','pairingArea','battleArea','battleComplete','koPairingArea','knockoutArea','knockoutComplete','playoffArea','playoffComplete','liveArea','seasonComplete'].forEach(id=>$(`#${id}`).hidden=id!==state.screen);if(state.screen==='blindArea'){if(pending)renderResolvedBlindFromRoom();else if(blindRound)renderBlindFromRoom();else showAudition()}else if(state.screen==='pairingArea')beginHumanBattlePairing();else if(state.screen==='battleArea')showBattle();else if(state.screen==='koPairingArea')beginHumanKoPairing();else if(state.screen==='knockoutArea')showKnockout();else if(state.screen==='playoffArea'){if(playoffIndex<playoffOrder.length){$('#playoffPerformance').hidden=false;$('#playoffResults').hidden=true;showPlayoffPerformer()}else startPlayoffResults()}else if(state.screen==='liveArea'){if(liveIndex<liveEntries.length){$('#livePerformance').hidden=false;$('#liveResults').hidden=true;showLivePerformer()}else startLiveResults()}updateCoachLabels();$('#startScreen').classList.add('hidden');$('#app').hidden=false}
+function hydrateRoom(state){roomKeys.forEach(k=>{if(k in state)eval(`${k}=state[k]`)});let byId=new Map(artists.map(a=>[a.id,a])),relink=x=>{if(Array.isArray(x))return x.map(relink);if(x&&typeof x==='object'){if(Number.isFinite(x.id)&&byId.has(x.id))return byId.get(x.id);let out={};Object.entries(x).forEach(([k,v])=>out[k]=relink(v));return out}return x};roomKeys.filter(k=>k!=='artists').forEach(k=>eval(`${k}=relink(${k})`));if(blindRound?.decisions)blindRound.decisions=new Set(blindRound.decisions);if(stealResponses?.pending)stealResponses.pending=new Set(stealResponses.pending);localSeat=roomSeats.findIndex(x=>x===clientId);renderAll();['blindArea','pairingArea','battleArea','battleComplete','koPairingArea','knockoutArea','knockoutComplete','playoffArea','playoffComplete','liveArea','seasonComplete'].forEach(id=>$(`#${id}`).hidden=id!==state.screen);if(state.screen==='blindArea'){if(pending)renderResolvedBlindFromRoom();else if(blindRound)renderBlindFromRoom();else showAudition()}else if(state.screen==='pairingArea')beginHumanBattlePairing();else if(state.screen==='battleArea')showBattle();else if(state.screen==='koPairingArea')beginHumanKoPairing();else if(state.screen==='knockoutArea')showKnockout();else if(state.screen==='playoffArea'){if(liveFlow)renderLiveFlow();else if(playoffIndex<playoffOrder.length){$('#playoffPerformance').hidden=false;$('#playoffResults').hidden=true;showPlayoffPerformer()}else startPlayoffResults()}else if(state.screen==='liveArea'){if(liveFlow)renderLiveFlow();else if(liveIndex<liveEntries.length){$('#livePerformance').hidden=false;$('#liveResults').hidden=true;showLivePerformer()}else startLiveResults()}updateCoachLabels();$('#startScreen').classList.add('hidden');$('#app').hidden=false}
 function setRoomStatus(message){let el=$('#roomStatus');if(!roomCode){el.classList.add('hidden');return}el.classList.remove('hidden');el.innerHTML=`ROOM ${roomCode} · ${message} <button id="copyRoom">COPY LINK</button>`;$('#copyRoom').onclick=()=>navigator.clipboard?.writeText(`${location.origin}${location.pathname}?room=${roomCode}`).then(()=>toast('Invite link copied.'))}
 function pollRoom(){if(!roomCode)return;fetchRoom(roomCode).then(row=>{if(roomLastUpdate&&row.updated_at!==roomLastUpdate){roomLastUpdate=row.updated_at;hydrateRoom(row.state);toast('Your friend advanced the season.');}else roomLastUpdate=row.updated_at}).catch(()=>setRoomStatus('Offline'))}
 async function createRoom(){if(!roomReady()){alert('Add your Supabase URL and anon key in index.html first. The setup instructions explain exactly where.');return}roomCode=randomRoom();localSeat=0;roomSeats=Array(4).fill(null);roomSeats[0]=clientId;let u=new URL(location.href);u.searchParams.set('room',roomCode);history.replaceState({},'',u);setRoomStatus(`Team ${coaches[0]} · creating…`);await saveRoom();roomSyncTimer=setInterval(pollRoom,2500);toast(`You are Team ${coaches[0]}. Copy the invite link for the other coaches.`)}
 async function joinRoom(){if(!roomReady()){alert('Add your Supabase URL and anon key in index.html first.');return}let code=prompt('Enter your friend’s six-character room code, or leave this blank to create a room:','');if(!code){openCoachSetup();let originalEnter=$('#enterBtn').onclick;$('#enterBtn').onclick=async()=>{await originalEnter();await createRoom();$('#enterBtn').onclick=originalEnter};return}code=code.trim().toUpperCase();try{let row=await fetchRoom(code);roomCode=code;roomLastUpdate=row.updated_at;hydrateRoom(row.state);let open=roomSeats.map((x,k)=>x?null:k).filter(Number.isFinite).filter(k=>k<playerCount);if(!open.length)throw new Error('Every player coach in this room has already been claimed.');let options=open.map(k=>`${k+1}: Team ${coaches[k]}`).join('\n'),choice=+prompt(`Choose your coach seat:\n${options}`,open[0]+1)-1;if(!open.includes(choice))throw new Error('That coach seat is unavailable.');roomSeats[choice]=clientId;localSeat=choice;await saveRoom();let u=new URL(location.href);u.searchParams.set('room',code);history.replaceState({},'',u);setRoomStatus(`Team ${coaches[choice]} · connected`);roomSyncTimer=setInterval(pollRoom,2500);toast(`You are Team ${coaches[choice]}.`)}catch(e){alert(e.message)}}
 $('#joinRoomBtn').onclick=joinRoom;
-document.addEventListener('click',()=>queueRoomSave());
+/* Result checkpoints and round decisions are written through their locked RPCs.
+   Do not let the general click autosave overwrite one of those in-flight writes. */
+document.addEventListener('click',()=>{
+  if(onlineRoom()&&(roundFlow||liveFlow||['playoffArea','liveArea'].includes(currentScreen())))return;
+  queueRoomSave();
+});
 /* Seat-based controls for connected rooms. Local play retains the original multi-chair UI. */
 const localBlindControls=renderBlindControls,localBattleShow=showBattle,localKnockoutShow=showKnockout,localBattlePairing=beginHumanBattlePairing,localKoPairing=beginHumanKoPairing;
 function waitForCoach(target,coach,action){$(target).innerHTML=`<div class="result-banner"><p class="eyebrow">Waiting for Team ${coaches[coach]}</p><h2>${coaches[coach]} is ${action}.</h2><p class="copy">Their decision will appear here automatically.</p></div>`}
@@ -471,6 +477,161 @@ beginSharedSteal=function(artist,entry,round){
   roundFlow={round,stage:'winner',entry,ready:[]};announceWinner(round);
 };
 answerSharedSteal=function(k,wants){answerRoundSteal(roundFlow?.round,k,wants)};
+
+/* Shared result-show controller. Performance screens intentionally stay local. */
+const localStartPlayoffResults=startPlayoffResults,localStartLiveResults=startLiveResults,localStartLiveShows=startLiveShows;
+const localStartPlayoffs=startPlayoffs;
+function liveSeats(except=[]){return roundSeats().filter(k=>!except.includes(k))}
+function setLiveCheckpoint(mode,action,label,details={},required=liveSeats()){
+  liveFlow={mode,stage:'checkpoint',action,label,required,ready:[],...details};
+  renderLiveFlow();saveRoundState();
+}
+async function acknowledgeLiveCheckpoint(){
+  if(!liveFlow||liveFlow.stage!=='checkpoint'||!liveFlow.required.includes(localSeat))return;
+  let action=liveFlow.action,claimed=false;
+  if(onlineRoom()){
+    try{let row=await roomRpc('submit_live_checkpoint',{p_room:roomCode,p_client:clientId});claimed=!!row.claimed;await refreshFromRoomRow(row)}catch(error){console.warn(error);toast('Could not record this reveal. Please try again.');return}
+  }else if(!liveFlow.ready.includes(localSeat))liveFlow.ready.push(localSeat);
+  if(!liveFlow||liveFlow.action!==action)return;
+  if(onlineRoom()){
+    if(claimed&&liveFlow.stage==='executing')executeLiveFlow();
+    return;
+  }
+  if(liveFlow.stage!=='checkpoint')return;
+  if(liveFlow.required.every(seat=>liveFlow.ready.includes(seat)))executeLiveFlow();else{renderLiveFlow();saveRoundState()}
+}
+function renderLiveCheckpoint(button){
+  let canAct=liveFlow.required.includes(localSeat)&&!liveFlow.ready.includes(localSeat);
+  button.hidden=!canAct;if(canAct){button.textContent=liveFlow.label;button.onclick=acknowledgeLiveCheckpoint}
+}
+function renderLiveFlow(){
+  if(!liveFlow)return;
+  if(!onlineRoom()&&liveFlow.stage==='checkpoint'&&liveFlow.required.every(seat=>liveFlow.ready?.includes(seat))){executeLiveFlow();return}
+  if(liveFlow.mode==='playoff')return renderPlayoffFlow();
+  renderLiveShowFlow();
+}
+function renderPlayoffFlow(){
+  $('#playoffPerformance').hidden=true;$('#playoffResults').hidden=false;$('#coachSave').classList.add('hidden');renderPlayoffVoteBoard();
+  (liveFlow.revealedPublic||[]).forEach(id=>{let x=playoffData.flat().find(item=>item.artist.id===id);if(x)setPlayoffCard(x,'safe')});
+  if(liveFlow.revealedSave){let x=playoffData.flat().find(item=>item.artist.id===liveFlow.revealedSave);if(x)setPlayoffCard(x,'coach-save')}
+  $('#playoffRevealFeed').innerHTML=liveFlow.lastReveal?`<div class="reveal-item">${liveFlow.lastReveal}</div>`:'';
+  if(liveFlow.stage==='save-choice'){
+    $('#revealPlayoffVote').hidden=true;
+    let owner=liveFlow.team;
+    if(localCoach(owner)){
+      $('#coachSave').classList.remove('hidden');$('#coachSave .coachNameText').textContent=coaches[owner];
+      $('#saveOptions').innerHTML=playoffData[owner].filter(x=>!x.public).map(x=>`<button data-live-save="${x.artist.id}"><b>${x.artist.name}</b><br><small>${x.artist.genre}</small></button>`).join('');
+      $$('[data-live-save]').forEach(button=>button.onclick=()=>chooseLiveSave(+button.dataset.liveSave));
+    }else $('#playoffRevealFeed').innerHTML=`<div class="reveal-item"><b>Team ${coaches[owner]}</b> is choosing their save.</div>`;
+    return;
+  }
+  renderLiveCheckpoint($('#revealPlayoffVote'));
+}
+function chooseLiveSave(id){
+  if(!liveFlow||liveFlow.stage!=='save-choice'||!localCoach(liveFlow.team))return;
+  let chosen=playoffData[liveFlow.team].find(x=>x.artist.id===id);if(!chosen)return;
+  let carry={revealedPublic:liveFlow.revealedPublic||[],lastReveal:liveFlow.lastReveal||''};
+  setLiveCheckpoint('playoff','playoff-save','REVEAL RESULT',{
+    ...carry,team:liveFlow.team,saveArtistId:id
+  },liveSeats([liveFlow.team]));
+  if(!liveFlow.required.length)executeLiveFlow();
+}
+function beginPlayoffCheckpoint(action,label,details={}){
+  setLiveCheckpoint('playoff',action,label,{revealedPublic:[],lastReveal:'',...details});
+}
+function executePlayoffFlow(){
+  let flow=liveFlow,k=flow.team;
+  if(flow.action==='playoff-public'){
+    let x=playoffPublic[playoffPublicIndex++];
+    let revealed=[...(flow.revealedPublic||[]),x.artist.id],last=`<b>${x.artist.name}</b> is safe for Team ${coaches[k]}.<br><small>Public Vote</small>`;
+    if(playoffPublicIndex<playoffPublic.length){setLiveCheckpoint('playoff','playoff-public','REVEAL NEXT PUBLIC VOTE →',{team:k,revealedPublic:revealed,lastReveal:last});return}
+    if(isHuman(k)){
+      liveFlow={mode:'playoff',stage:'save-choice',team:k,revealedPublic:revealed,lastReveal:last};renderLiveFlow();saveRoundState();return;
+    }
+    let save=playoffData[k].find(x=>x.coachSaved);
+    setLiveCheckpoint('playoff','playoff-save','REVEAL COACH SAVE →',{team:k,revealedPublic:revealed,lastReveal:last,saveArtistId:save.artist.id});return;
+  }
+  if(flow.action==='playoff-save'){
+    let chosen=playoffData[k].find(x=>x.artist.id===flow.saveArtistId);if(!chosen)return;
+    chosen.coachSaved=true;
+    let last=`<b>${chosen.artist.name}</b> is saved by Team ${coaches[k]}.`;
+    setLiveCheckpoint('playoff','playoff-next-team','ADVANCE TO NEXT TEAM →',{team:k,revealedPublic:flow.revealedPublic||[],revealedSave:chosen.artist.id,lastReveal:last});return;
+  }
+  if(flow.action==='playoff-next-team'){
+    playoffRevealIndex++;
+    if(playoffRevealIndex<4){let team=playoffData[playoffRevealIndex];playoffPublic=team.filter(x=>x.public);playoffPublicIndex=0;beginPlayoffCheckpoint('playoff-public',`REVEAL TEAM ${coaches[playoffRevealIndex].toUpperCase()} PUBLIC VOTE →`,{team:playoffRevealIndex});return}
+    liveFlow=null;completePlayoffs();saveRoundState();
+  }
+}
+function renderLiveShowFlow(){
+  $('#livePerformance').hidden=true;$('#liveResults').hidden=false;$('#liveResultsLabel').textContent=liveFlow.mode==='begin-week'?'Live Show':'Results Show';$('#liveResultsTitle').textContent=liveFlow.mode==='begin-week'?'Ready for the next week.':'The vote is in.';
+  $('#liveResultsCopy').textContent=liveFlow.mode==='begin-week'?'Every coach begins the week together.':'Every reveal appears after all human coaches are ready.';
+  renderVoteBoard();
+  (liveFlow.safeIds||[]).forEach(id=>{let a=artists.find(artist=>artist.id===id);if(a)setVoteCard(a,'safe')});
+  if(liveFlow.bottomIds)liveFlow.bottomIds.forEach(id=>{let a=artists.find(artist=>artist.id===id);if(a)setVoteCard(a,'bottom')});
+  if(liveFlow.eliminatedIds)liveFlow.eliminatedIds.forEach(id=>{let a=artists.find(artist=>artist.id===id);if(a)setVoteCard(a,'eliminated')});
+  if(liveFlow.thirdId){let a=artists.find(artist=>artist.id===liveFlow.thirdId);if(a)setVoteCard(a,'third')}
+  $('#liveRevealFeed').innerHTML=liveFlow.lastReveal?`<div class="reveal-item">${liveFlow.lastReveal}</div>`:'';
+  $('#revealEliminated').classList.add('hidden');$('#nextLiveWeek').classList.add('hidden');renderLiveCheckpoint($('#revealBottom'));
+}
+function beginLiveWeekCheckpoint(){let cfg=liveRounds[liveWeek];setLiveCheckpoint('begin-week','begin-week',`BEGIN ${cfg.name.toUpperCase()} →`,{lastReveal:''})}
+function beginLiveResultCheckpoint(action,label,details={}){setLiveCheckpoint('live',action,label,{safeIds:[],lastReveal:'',...details})}
+function executeLiveShowFlow(){
+  let flow=liveFlow,cfg=liveRounds[liveWeek];
+  if(flow.mode==='begin-week'){liveFlow=null;startLiveWeek();saveRoundState();return}
+  if(flow.action==='live-safe'){
+    let x=liveSafe[liveSafeIndex++],safeIds=[...(flow.safeIds||[]),x.artist.id],last=`<b>${x.artist.name}</b> is safe.<br><small>Team ${coaches[x.artist.current]} · Public Vote</small>`;
+    if(liveSafeIndex<liveSafe.length){beginLiveResultCheckpoint('live-safe','REVEAL NEXT PUBLIC VOTE →',{safeIds,lastReveal:last});return}
+    if(cfg.direct){beginLiveResultCheckpoint('live-eliminate','REVEAL ELIMINATION →',{safeIds,lastReveal:last});return}
+    beginLiveResultCheckpoint('live-bottom',`REVEAL BOTTOM ${cfg.bottom} →`,{safeIds,lastReveal:last});return;
+  }
+  if(flow.action==='live-bottom'){
+    let ids=liveBottom.map(x=>x.artist.id),last=`<b>Bottom ${cfg.bottom}:</b> ${liveBottom.map(x=>x.artist.name).join(' · ')}`;
+    beginLiveResultCheckpoint('live-eliminate','REVEAL ELIMINATION →',{safeIds:flow.safeIds||[],bottomIds:ids,lastReveal:last});return;
+  }
+  if(flow.action==='live-eliminate'){
+    let eliminated=[...liveBottom].sort((a,b)=>a.vote-b.vote).slice(0,cfg.elim);
+    eliminated.forEach(x=>{x.artist.status='live-elim';x.artist.eliminatedRound=cfg.name});
+    liveEntries.forEach((x,n)=>{let result=eliminated.includes(x)?'Eliminated':liveBottom.includes(x)?`Bottom ${cfg.bottom}`:'Public Vote';recordRoundScore(x.artist,cfg.name,x.performance);liveLog.push({round:cfg.name,artist:x.artist,order:n+1,comment:x.comment,streams:x.streams,result})});
+    let last=`<b>${eliminated.map(x=>x.artist.name).join(' and ')}</b> ${eliminated.length===1?'is':'are'} eliminated.`;
+    beginLiveResultCheckpoint('live-next-week',`CONTINUE TO ${liveRounds[liveWeek+1].name.toUpperCase()} →`,{safeIds:flow.safeIds||[],bottomIds:flow.bottomIds||[],eliminatedIds:eliminated.map(x=>x.artist.id),lastReveal:last});renderAll();return;
+  }
+  if(flow.action==='live-next-week'){liveWeek++;beginLiveWeekCheckpoint();return}
+  if(flow.action==='finale-third'){
+    finaleRanked=[...liveEntries].sort((a,b)=>b.vote-a.vote);let third=finaleRanked[2];
+    beginLiveResultCheckpoint('finale-winner','REVEAL THE WINNER →',{thirdId:third.artist.id,lastReveal:`<b>Third place: ${third.artist.name}</b> · Team ${coaches[third.artist.current]}`});return;
+  }
+  if(flow.action==='finale-winner'){
+    let ranked=finaleRanked,classes=['first','second','third'],labels=['Winner','Runner-up','Third Place'];
+    ranked.forEach((x,n)=>{recordRoundScore(x.artist,'Finale',x.performance);x.artist.status=classes[n];liveLog.push({round:'Finale',artist:x.artist,order:n+1,comment:x.comment,streams:x.streams,result:labels[n]})});
+    liveFlow=null;renderAll();$('#liveArea').hidden=true;$('#seasonComplete').hidden=false;$('#winnerHeadline').textContent=`${ranked[0].artist.name} wins Season 01!`;$('#finalPlacements').textContent=`Team ${coaches[ranked[0].artist.current]} wins. ${ranked[1].artist.name} is runner-up; ${ranked[2].artist.name} finishes third.`;$('#phaseLabel').textContent='SEASON COMPLETE';saveRoundState();
+  }
+}
+function executeLiveFlow(){if(!liveFlow)return;if(liveFlow.mode==='playoff')executePlayoffFlow();else executeLiveShowFlow()}
+startPlayoffResults=function(){
+  if(!onlineRoom())return localStartPlayoffResults();
+  if(liveFlow)return renderLiveFlow();
+  localStartPlayoffResults();let team=playoffData[0];playoffPublic=team.filter(x=>x.public);playoffPublicIndex=0;beginPlayoffCheckpoint('playoff-public',`REVEAL TEAM ${coaches[0].toUpperCase()} PUBLIC VOTE →`,{team:0});
+};
+startLiveResults=function(){
+  if(!onlineRoom())return localStartLiveResults();
+  if(liveFlow)return renderLiveFlow();
+  localStartLiveResults();
+  let cfg=liveRounds[liveWeek];
+  if(cfg.name==='Finale'){beginLiveResultCheckpoint('finale-third','REVEAL FINAL RESULTS →');return}
+  beginLiveResultCheckpoint('live-safe','REVEAL FIRST PUBLIC VOTE →');
+};
+startLiveShows=function(){
+  if(!onlineRoom())return localStartLiveShows();
+  $('#playoffComplete').hidden=true;$('#liveArea').hidden=false;liveWeek=0;beginLiveWeekCheckpoint();
+};
+startPlayoffs=function(){
+  localStartPlayoffs();
+  if(onlineRoom())saveRoom();
+};
+/* These handlers were originally bound before the online flow overrides. */
+$('#beginPlayoffs').onclick=startPlayoffs;
+$('#beginLiveShows').onclick=startLiveShows;
 
 /* Chat belongs to the game shell whenever a private room is active. */
 function openRoomChat(){
