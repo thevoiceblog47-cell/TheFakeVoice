@@ -328,6 +328,54 @@ $$;
 
 grant execute on function public.submit_round_winner(text,text,integer) to anon;
 
+-- Emergency recovery for a test/debug session. This deliberately skips the
+-- remaining decision screens for the current Battle or Knockout, records a
+-- random winner, and presents the next matchup. It is row-locked so every
+-- browser receives the same recovery state instead of trying to escape the
+-- stalled round independently.
+create or replace function public.force_round_end(p_room text,p_client text) returns jsonb language plpgsql set search_path='' as $$
+declare s jsonb; f jsonb; entry jsonb; winner jsonb; loser jsonb; revised_artists jsonb; seat integer; round_name text; queue_key text; index_key text; log_key text[]; round_index integer; changed_at timestamptz;
+begin
+  select state into s from public.game_rooms where code=p_room for update;
+  if not found then raise exception 'Room not found'; end if;
+  select ordinality-1 into seat
+    from jsonb_array_elements_text(coalesce(s->'roomSeats','[]'::jsonb)) with ordinality as seats(member,ordinality)
+    where member=p_client limit 1;
+  if seat is null then raise exception 'You are not seated in this room'; end if;
+
+  f:=s->'roundFlow';
+  round_name:=coalesce(f->>'round',case when s->>'screen'='battleArea' then 'battle' when s->>'screen'='knockoutArea' then 'knockout' else null end);
+  if round_name is null or round_name not in ('battle','knockout') then raise exception 'There is no Battle or Knockout to force forward'; end if;
+  queue_key:=case when round_name='battle' then 'battleQueue' else 'koQueue' end;
+  index_key:=case when round_name='battle' then 'battleIndex' else 'koIndex' end;
+  log_key:=case when round_name='battle' then '{battleLog}'::text[] else '{koLog}'::text[] end;
+  round_index:=coalesce((s->>index_key)::integer,0);
+  entry:=coalesce(f->'entry',s->queue_key->round_index);
+  if entry is null then raise exception 'There is no matchup to force forward'; end if;
+
+  if entry->'winner' is not null then winner:=entry->'winner'; loser:=entry->'loser';
+  elsif random()<.5 then winner:=entry->'a'; loser:=entry->'b';
+  else winner:=entry->'b'; loser:=entry->'a'; end if;
+  entry:=jsonb_set(entry,'{winner}',winner,true);
+  entry:=jsonb_set(entry,'{loser}',loser,true);
+  entry:=jsonb_set(entry,'{stealers}','[]'::jsonb,true);
+  entry:=jsonb_set(entry,'{stealResolved}','true'::jsonb,true);
+  entry:=jsonb_set(entry,'{outcome}',to_jsonb((loser->>'name')||' was eliminated by Force Round End.'),true);
+  select jsonb_agg(case when (artist->>'id')::integer=(loser->>'id')::integer
+    then jsonb_set(artist,'{status}',to_jsonb((case when round_name='battle' then 'battle-elim' else 'knockout-elim' end)::text),true)
+    else artist end order by ordinality) into revised_artists
+    from jsonb_array_elements(coalesce(s->'artists','[]'::jsonb)) with ordinality as artists(artist,ordinality);
+  s:=jsonb_set(s,'{artists}',coalesce(revised_artists,'[]'::jsonb),true);
+  s:=jsonb_set(s,log_key,coalesce(s#>log_key,'[]'::jsonb)||jsonb_build_array(entry),true);
+  s:=jsonb_set(s,array[index_key],to_jsonb(round_index+1),true);
+  s:=jsonb_set(s,'{roundFlow}','null'::jsonb,true);
+  update public.game_rooms set state=s where code=p_room returning updated_at into changed_at;
+  return jsonb_build_object('state',s,'updated_at',changed_at);
+end;
+$$;
+
+grant execute on function public.force_round_end(text,text) to anon;
+
 -- Result-show checkpoints use the same row lock so every coach's reveal click
 -- is retained when they press together.
 create or replace function public.submit_live_checkpoint(p_room text,p_client text) returns jsonb language plpgsql set search_path='' as $$
