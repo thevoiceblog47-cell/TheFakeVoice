@@ -191,3 +191,59 @@ $$;
 
 grant execute on function public.mark_blind_result_ready(text,text) to anon;
 grant execute on function public.reveal_cpu_blind_turns(text,text) to anon;
+
+-- Atomic acknowledgements for Battle and Knockout result screens.  Two
+-- browsers can press a button at once without one acknowledgement replacing
+-- the other in the room JSON.
+create or replace function public.submit_round_response(
+  p_room text,
+  p_client text,
+  p_action text,
+  p_wants_steal boolean default false
+) returns jsonb language plpgsql set search_path='' as $$
+declare s jsonb; f jsonb; ready jsonb; required jsonb; human jsonb; stealers jsonb; seat integer; changed_at timestamptz;
+begin
+  select state into s from public.game_rooms where code=p_room for update;
+  if not found then raise exception 'Room not found'; end if;
+  select ordinality-1 into seat
+    from jsonb_array_elements_text(coalesce(s->'roomSeats','[]'::jsonb)) with ordinality as seats(member,ordinality)
+    where member=p_client limit 1;
+  if seat is null then raise exception 'You are not seated in this room'; end if;
+  f:=s->'roundFlow';
+  if f is null then raise exception 'No round decision is active'; end if;
+  ready:=coalesce(f->'ready','[]'::jsonb);
+
+  if p_action='show_winner' then
+    if f->>'stage'<>'show-winner' then raise exception 'The winner is not ready to show'; end if;
+    required:=coalesce(f->'required','[]'::jsonb);
+    if not (required @> jsonb_build_array(seat)) then raise exception 'This coach does not need to show the winner'; end if;
+  elsif p_action='show_steal' then
+    if f->>'stage'<>'show-steal' then raise exception 'The steal is not ready to show'; end if;
+    required:=coalesce(f->'required','[]'::jsonb);
+    if not (required @> jsonb_build_array(seat)) then raise exception 'This coach does not need to show the steal'; end if;
+  elsif p_action='next_round' then
+    if f->>'stage'<>'reveal' then raise exception 'The round result is not ready to advance'; end if;
+    required:=jsonb_build_array(0,1,2,3);
+    if seat>=coalesce((s->>'playerCount')::integer,0) then raise exception 'This chair is not human-controlled'; end if;
+  elsif p_action='steal' then
+    if f->>'stage'<>'steal-choice' then raise exception 'No steal decision is active'; end if;
+    human:=coalesce(f->'human','[]'::jsonb);
+    if not (human @> jsonb_build_array(seat)) then raise exception 'This coach is not eligible to steal'; end if;
+    if p_wants_steal then
+      stealers:=coalesce(f#>'{entry,stealers}','[]'::jsonb);
+      if not (stealers @> jsonb_build_array(seat)) then stealers:=stealers||jsonb_build_array(seat); end if;
+      f:=jsonb_set(f,'{entry,stealers}',stealers,true);
+    end if;
+  else
+    raise exception 'Unknown round action';
+  end if;
+
+  if not (ready @> jsonb_build_array(seat)) then ready:=ready||jsonb_build_array(seat); end if;
+  f:=jsonb_set(f,'{ready}',ready,true);
+  s:=jsonb_set(s,'{roundFlow}',f,true);
+  update public.game_rooms set state=s where code=p_room returning updated_at into changed_at;
+  return jsonb_build_object('state',s,'updated_at',changed_at);
+end;
+$$;
+
+grant execute on function public.submit_round_response(text,text,text,boolean) to anon;
