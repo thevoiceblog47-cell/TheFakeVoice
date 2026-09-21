@@ -39,6 +39,22 @@ grant select,insert,update on public.game_rooms to anon;
 grant select,insert on public.game_messages to anon;
 grant usage,select on sequence public.game_messages_id_seq to anon;
 
+-- Realtime replaces constant full-room polling. Only changes to the active
+-- room and its chat messages are delivered to connected players.
+do $$
+begin
+  if not exists (select 1 from pg_publication where pubname='supabase_realtime') then
+    create publication supabase_realtime;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='game_rooms') then
+    alter publication supabase_realtime add table public.game_rooms;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='game_messages') then
+    alter publication supabase_realtime add table public.game_messages;
+  end if;
+end;
+$$;
+
 -- The earlier draft returned a table row; remove it before creating the
 -- simpler JSON-returning versions below.
 drop function if exists public.submit_blind_decision(text,text,boolean);
