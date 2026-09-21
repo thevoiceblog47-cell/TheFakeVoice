@@ -230,7 +230,15 @@ begin
   ready:=coalesce(f->'ready','[]'::jsonb);
 
   if p_action='show_winner' then
-    if f->>'stage' not in ('winner-choice','show-winner') then raise exception 'The winner is not ready to show'; end if;
+    -- Both human browsers may press Show Winner at virtually the same time.
+    -- If the final acknowledgement already advanced the shared flow, a late
+    -- in-flight click is a harmless duplicate, not an error for that player.
+    if f->>'stage' not in ('winner-choice','show-winner') then
+      if f->>'stage' in ('steal-choice','show-steal','reveal') then
+        return jsonb_build_object('state',s,'updated_at',(select updated_at from public.game_rooms where code=p_room));
+      end if;
+      raise exception 'The winner is not ready to show';
+    end if;
     required:=coalesce(f->'required','[]'::jsonb);
     if not (required @> jsonb_build_array(seat)) then raise exception 'This coach does not need to show the winner'; end if;
   elsif p_action='show_steal' then
