@@ -214,7 +214,7 @@ begin
   ready:=coalesce(f->'ready','[]'::jsonb);
 
   if p_action='show_winner' then
-    if f->>'stage'<>'show-winner' then raise exception 'The winner is not ready to show'; end if;
+    if f->>'stage' not in ('winner-choice','show-winner') then raise exception 'The winner is not ready to show'; end if;
     required:=coalesce(f->'required','[]'::jsonb);
     if not (required @> jsonb_build_array(seat)) then raise exception 'This coach does not need to show the winner'; end if;
   elsif p_action='show_steal' then
@@ -247,6 +247,47 @@ end;
 $$;
 
 grant execute on function public.submit_round_response(text,text,text,boolean) to anon;
+
+-- A human winner choice and the other coaches' Show Winner clicks can happen
+-- in either order. Lock the chosen winner into the room before the reveal.
+create or replace function public.submit_round_winner(p_room text,p_client text,p_winner integer) returns jsonb language plpgsql set search_path='' as $$
+declare s jsonb; f jsonb; entry jsonb; winner jsonb; loser jsonb; revised_artists jsonb; seat integer; changed_at timestamptz; result_key text[];
+begin
+  select state into s from public.game_rooms where code=p_room for update;
+  if not found then raise exception 'Room not found'; end if;
+  select ordinality-1 into seat
+    from jsonb_array_elements_text(coalesce(s->'roomSeats','[]'::jsonb)) with ordinality as seats(member,ordinality)
+    where member=p_client limit 1;
+  if seat is null then raise exception 'You are not seated in this room'; end if;
+  f:=s->'roundFlow';
+  if f is null or f->>'stage'<>'winner-choice' or coalesce((f->>'winnerChosen')::boolean,false) then
+    raise exception 'No human winner choice is active';
+  end if;
+  entry:=f->'entry';
+  if seat<>(entry->>'coach')::integer then raise exception 'Only the battle coach can choose this winner'; end if;
+  if p_winner=(entry->'a'->>'id')::integer then winner:=entry->'a'; loser:=entry->'b';
+  elsif p_winner=(entry->'b'->>'id')::integer then winner:=entry->'b'; loser:=entry->'a';
+  else raise exception 'That artist is not in this matchup'; end if;
+  entry:=jsonb_set(entry,'{winner}',winner,true);
+  entry:=jsonb_set(entry,'{loser}',loser,true);
+  entry:=jsonb_set(entry,'{stealers}','[]'::jsonb,true);
+  entry:=jsonb_set(entry,'{outcome}','""'::jsonb,true);
+  f:=jsonb_set(f,'{entry}',entry,true);
+  f:=jsonb_set(f,'{winnerChosen}','true'::jsonb,true);
+  s:=jsonb_set(s,'{roundFlow}',f,true);
+  select jsonb_agg(case when (artist->>'id')::integer=(loser->>'id')::integer
+    then jsonb_set(artist,'{status}',to_jsonb((case when f->>'round'='battle' then 'battle-elim' else 'knockout-elim' end)::text),true)
+    else artist end order by ordinality) into revised_artists
+    from jsonb_array_elements(coalesce(s->'artists','[]'::jsonb)) with ordinality as artists(artist,ordinality);
+  s:=jsonb_set(s,'{artists}',coalesce(revised_artists,'[]'::jsonb),true);
+  result_key:=case when f->>'round'='battle' then '{battleLog}'::text[] else '{koLog}'::text[] end;
+  s:=jsonb_set(s,result_key,coalesce(s#>result_key,'[]'::jsonb)||jsonb_build_array(entry),true);
+  update public.game_rooms set state=s where code=p_room returning updated_at into changed_at;
+  return jsonb_build_object('state',s,'updated_at',changed_at);
+end;
+$$;
+
+grant execute on function public.submit_round_winner(text,text,integer) to anon;
 
 -- Result-show checkpoints use the same row lock so every coach's reveal click
 -- is retained when they press together.

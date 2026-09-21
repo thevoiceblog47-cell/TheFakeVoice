@@ -49,7 +49,7 @@ const last=['Torres','Park','Brooks','Carter','Rivers','Cruz','Bell','Lane','Mon
 const genres=['Pop','R&B','Indie Folk','Country','Soul','Alternative','Latin Pop','Rock','Americana','Singer-Songwriter','Country Rock','Jazz','Dance Pop','Blues','Gospel','Funk','Reggae','Metal','Classical Crossover','EDM','Bluegrass','Hip-Hop','Musical Theatre','Folk Rock','Neo Soul'];
 const towns=['Miami, FL','Portland, OR','Tulsa, OK','Detroit, MI','Austin, TX','San Diego, CA','Nashville, TN','New York, NY','Asheville, NC','Chicago, IL','Seattle, WA','Lexington, KY','Philadelphia, PA','Atlanta, GA','Denver, CO','New Orleans, LA','Boston, MA','Phoenix, AZ','Minneapolis, MN','Kansas City, MO','Honolulu, HI','Cleveland, OH','Richmond, VA','Boise, ID','Santa Fe, NM','Milwaukee, WI','Burlington, VT','Birmingham, AL','Las Vegas, NV','Salt Lake City, UT','Brooklyn, NY','Spokane, WA','Dallas, TX','Houston, TX','Baltimore, MD','Charleston, SC','Savannah, GA','Orlando, FL','Tampa, FL','Jacksonville, FL','Charlotte, NC','Raleigh, NC','Columbus, OH','Cincinnati, OH','Indianapolis, IN','St. Louis, MO','Omaha, NE','Des Moines, IA','Madison, WI','Grand Rapids, MI','Pittsburgh, PA','Buffalo, NY','Rochester, NY','Providence, RI','Manchester, NH','Hartford, CT','Newark, NJ','Washington, DC','Louisville, KY','Memphis, TN','Little Rock, AR','Jackson, MS','Baton Rouge, LA','Oklahoma City, OK','Wichita, KS','Fargo, ND','Sioux Falls, SD','Billings, MT','Cheyenne, WY','Albuquerque, NM','El Paso, TX','Tucson, AZ','Fresno, CA','Sacramento, CA','Oakland, CA','San Jose, CA','Los Angeles, CA','Eugene, OR','Tacoma, WA','Anchorage, AK'];
 let contestantRoster=[];
-let coachName='Coach',cpuCoachNames=['Lena','Marcus','Ivy'],playerCount=1,coaches=[],artists=[],teams=[[],[],[],[]],auditions=[],auditionIndex=0,auditionOrder=[],pending=null,blindRound=null,blindReady=[],roundFlow=null,liveFlow=null,userPairs=[],pairDraft=[],selected=[],battleQueue=[],battleIndex=0,battleLog=[],userSteals=0,cpuSteals=[0,0,0,0],koPairs=[],koPairDraft=[],koSelected=[],koQueue=[],koIndex=0,koLog=[],userKoSteals=0,cpuKoSteals=[0,0,0,0],playoffData=[],playoffOrder=[],playoffIndex=0,playoffReveals=[],playoffRevealIndex=0,playoffPublic=[],playoffPublicIndex=0,liveLog=[],spotifyLog=[],liveWeek=0,liveEntries=[],liveIndex=0,liveStep='performance',liveBottom=[],liveSafe=[],liveSafeIndex=0,finaleRanked=[];
+let coachName='Coach',cpuCoachNames=['Lena','Marcus','Ivy'],playerCount=1,coaches=[],artists=[],teams=[[],[],[],[]],auditions=[],auditionIndex=0,auditionOrder=[],pending=null,blindRound=null,blindReady=[],roundFlow=null,liveFlow=null,userPairs=[],pairDraft=[],selected=[],battleQueue=[],battleIndex=0,battleLog=[],userSteals=0,cpuSteals=[0,0,0,0],koPairs=[],koPairDraft=[],koSelected=[],koQueue=[],koIndex=0,koLog=[],userKoSteals=0,cpuKoSteals=[0,0,0,0],playoffData=[],playoffOrder=[],playoffIndex=0,playoffReveals=[],playoffRevealIndex=0,playoffPublic=[],playoffPublicIndex=0,liveLog=[],spotifyLog=[],liveWeek=0,liveEntries=[],liveIndex=0,liveStep='performance',liveBottom=[],liveSafe=[],liveSafeIndex=0,finaleRanked=[],seasonResult=null;
 function isHuman(k){return k<playerCount}
 let battlePairingsByCoach=[[],[],[],[]],knockoutPairingsByCoach=[[],[],[],[]],pairingCoach=0,stealResponses=null;
 async function loadContestantSpreadsheet(){try{let res=await fetch('ContestantsList.xlsx',{cache:'no-store'});if(!res.ok)throw new Error('Roster spreadsheet not found');let book=XLSX.read(await res.arrayBuffer(),{type:'array'}),sheet=book.Sheets.Contestants;if(!sheet)throw new Error('Missing Contestants sheet');let rows=XLSX.utils.sheet_to_json(sheet,{defval:''}).filter(r=>String(r.Contestant||'').trim());contestantRoster=rows.map(r=>({name:String(r.Contestant).trim(),genre:String(r.Genre||'Pop').trim(),image:String(r['Image Link']||'').trim(),age:Number(r.Age)||null,hometown:String(r.Hometown||'').trim()||null,gender:String(r.Gender||'').trim()}));if(contestantRoster.length<48)throw new Error('The roster needs at least 48 contestants');console.info(`Loaded ${contestantRoster.length} contestants from spreadsheet.`)}catch(err){console.error(err);toast?.('Could not load ContestantsList.xlsx.');}}
@@ -57,7 +57,7 @@ const rosterReady=loadContestantSpreadsheet();
 function makeArtists(){return shuffle(contestantRoster.map((r,id)=>({id,name:r.name,age:r.age||18+Math.floor(Math.random()*33),genre:r.genre||'Pop',hometown:r.hometown||pick(towns),image:r.image,strength:45+Math.floor(Math.random()*51),momentum:0,streamBias:(Math.random()-.5)*22,roundScores:[],origin:null,current:null,status:'',stolen:false,departures:[]})));}
 function setStage(title){$('#roundLabel').textContent='';$('#heroTitle').textContent=title;$('#heroCopy').textContent=''}
 function updateCoachLabels(){['userHead','stealHead','koStealHead0'].forEach((id,i)=>$(`#${id}`).textContent=i?'Team '+coachName:coachName);[1,2,3].forEach(k=>{$(`#coachHead${k}`).textContent=coaches[k];$(`#stealHead${k}`).textContent='Team '+coaches[k];$(`#koStealHead${k}`).textContent='Team '+coaches[k]})}
-function resetGame(){coaches=[coachName,...cpuCoachNames];artists=makeArtists();teams=[[],[],[],[]];auditions=[];auditionIndex=0;auditionOrder=shuffle(artists);pending=null;blindReady=[];roundFlow=null;liveFlow=null;userPairs=[];selected=[];battleQueue=[];battleIndex=0;battleLog=[];userSteals=0;cpuSteals=[0,0,0,0];koPairs=[];koSelected=[];koQueue=[];koIndex=0;koLog=[];userKoSteals=0;cpuKoSteals=[0,0,0,0];playoffData=[];playoffOrder=[];playoffIndex=0;playoffReveals=[];playoffRevealIndex=0;liveLog=[];spotifyLog=[];liveWeek=0;liveEntries=[];liveBottom=[];liveSafe=[];liveSafeIndex=0;['pairingArea','battleArea','battleComplete','koPairingArea','knockoutArea','knockoutComplete','playoffArea','playoffComplete','liveArea','seasonComplete'].forEach(x=>$(`#${x}`).hidden=true);$('#blindArea').hidden=false;$('#phaseLabel').textContent='BLIND AUDITIONS';setStage('Blind Auditions');updateCoachLabels();renderAll();showAudition();}
+function resetGame(){coaches=[coachName,...cpuCoachNames];artists=makeArtists();teams=[[],[],[],[]];auditions=[];auditionIndex=0;auditionOrder=shuffle(artists);pending=null;blindReady=[];roundFlow=null;liveFlow=null;userPairs=[];selected=[];battleQueue=[];battleIndex=0;battleLog=[];userSteals=0;cpuSteals=[0,0,0,0];koPairs=[];koSelected=[];koQueue=[];koIndex=0;koLog=[];userKoSteals=0;cpuKoSteals=[0,0,0,0];playoffData=[];playoffOrder=[];playoffIndex=0;playoffReveals=[];playoffRevealIndex=0;liveLog=[];spotifyLog=[];liveWeek=0;liveEntries=[];liveBottom=[];liveSafe=[];liveSafeIndex=0;seasonResult=null;['pairingArea','battleArea','battleComplete','koPairingArea','knockoutArea','knockoutComplete','playoffArea','playoffComplete','liveArea','seasonComplete'].forEach(x=>$(`#${x}`).hidden=true);$('#blindArea').hidden=false;$('#phaseLabel').textContent='BLIND AUDITIONS';setStage('Blind Auditions');updateCoachLabels();renderAll();showAudition();}
 function initials(n){return n.split(' ').map(x=>x[0]).join('')}
 function artistAvatar(a){return a.image?`<img src="${a.image}" alt="${a.name}">`:initials(a.name)}
 function toast(t){$('#toast').textContent=t;$('#toast').classList.add('show');setTimeout(()=>$('#toast').classList.remove('show'),2200)}
@@ -84,10 +84,29 @@ function renderMini(){$('#miniTeams').innerHTML=coaches.map((c,k)=>`<div class="
 function wikiCells(k){let entries=[];artists.forEach(a=>{let departures=a.departures.filter(d=>d.team===k);if(a.origin===k){let first=departures[0];entries.push({a,cl:first?`${first.round}-stolen`:a.current===k?a.status:'battle-elim',acquired:false});departures.slice(1).forEach(d=>entries.push({a,cl:`${d.round}-stolen`,acquired:true}))}else departures.forEach(d=>entries.push({a,cl:`${d.round}-stolen`,acquired:true}));if(a.current===k&&(a.origin!==k||departures.length))entries.push({a,cl:a.status,acquired:true})});let rank={first:0,second:1,third:2,'':3,'playoff-elim':5,'knockout-stolen':6,'knockout-elim':7,'battle-stolen':8,'battle-elim':9},cellRank=e=>e.cl==='live-elim'?4+(5-Math.max(0,liveRounds.findIndex(r=>r.name===e.a.eliminatedRound)))/10:(rank[e.cl]??3);entries.sort((x,y)=>cellRank(x)-cellRank(y));return entries.concat(Array(Math.max(0,15-entries.length)).fill(null)).slice(0,15)}
 function renderWiki(){$('#wikiTeams').innerHTML=coaches.map((c,k)=>{let cells=wikiCells(k);return [0,1,2].map(r=>`<tr class="${r===2?'team-end':''}">${r===0?`<th rowspan="3">Team ${c}</th>`:''}${cells.slice(r*5,r*5+5).map(e=>e?`<td class="${e.cl} ${e.acquired?'stolen':''}">${e.a.name}</td>`:'<td class="empty">—</td>').join('')}</tr>`).join('')}).join('')}
 function resultClass(x,round){if(!x.outcome)return round==='battle'?'elim-battle':'elim-knockout';return round==='battle'?'steal-battle':'steal-knockout'}
-function matrix(entry,round){return coaches.map((c,k)=>`<td class="${entry.stealWinner===k?(round==='battle'?'steal-battle':'steal-knockout'):''}">${entry.stealers?.includes(k)?'✓':'—'}</td>`).join('')}
+function trackedStealWinner(entry,round){return entry.stealWinner??(entry.loser?.stolenRound===round&&entry.loser.current!==entry.coach?entry.loser.current:null)}
+function matrix(entry,round){let chosen=trackedStealWinner(entry,round);return coaches.map((c,k)=>`<td class="${chosen===k?(round==='battle'?'steal-battle':'steal-knockout'):''}">${entry.stealers?.includes(k)||chosen===k?'✓':'—'}</td>`).join('')}
 function renderTracker(){$('#auditionRows').innerHTML=auditions.map((x,n)=>{let cls=x.turns.length===1?'single':'multi';return`<tr class="${x.turns.length?'':'no-turn'}"><td>${n+1}</td><td><b>${x.artist.name}</b></td><td>${x.artist.age}</td><td>${x.artist.hometown}</td><td>${x.artist.genre}</td>${coaches.map((_,k)=>`<td class="${x.turns.includes(k)?`check ${x.winner===k?`pick ${cls}`:''}`:''}">${x.turns.includes(k)?'✓':'—'}</td>`).join('')}</tr>`}).join('');$('#battleRows').innerHTML=battleLog.length?battleLog.map((x,n)=>`<tr><td>Team ${coaches[x.coach]}</td><td>${n+1}</td><td class="winner-cell"><b>${x.winner.name}</b></td><td class="${x.stealWinner!==null&&x.stealWinner!==undefined?'steal-loser':'loser-cell'}">${x.loser.name}</td>${matrix(x,'battle')}</tr>`).join(''):'<tr><td colspan="8">Battle results will appear here.</td></tr>';$('#knockoutRows').innerHTML=koLog.length?koLog.map((x,n)=>`<tr><td>Team ${coaches[x.coach]}</td><td>${n+1}</td><td class="winner-cell"><b>${x.winner.name}</b></td><td class="${x.stealWinner!==null&&x.stealWinner!==undefined?'steal-loser':'loser-cell'}">${x.loser.name}</td>${matrix(x,'knockout')}</tr>`).join(''):'<tr><td colspan="8">Knockout results will appear here.</td></tr>';renderLiveTracker()}
-function liveResultClass(result){if(result==='Public Vote')return'result-public';if(result==='Coach Save')return'result-save';if(result==='Eliminated')return'result-eliminated';if(result==='Winner')return'result-winner';if(result==='Runner-up')return'result-runner';if(result==='Third Place')return'result-third';if(result.startsWith('Bottom'))return'result-bottom';return'result-safe'}
-function renderLiveTracker(){let rounds=['Live Playoffs',...liveRounds.map(x=>x.name)],groups=rounds.map(round=>({round,entries:liveLog.filter(x=>x.round===round)})).filter(x=>x.entries.length),sections=$('#liveTrackerSections');sections.innerHTML=groups.length?groups.map(({round,entries})=>`<section class="card wiki-wrap live-week-box"><div class="wiki-title">${round==='Live Playoffs'?'Live Playoffs':`${round} · Live Show`}</div><table class="wiki-history"><thead><tr><th>Coach</th><th>Order</th><th>Artist</th><th>Result</th></tr></thead><tbody>${[...entries].sort((a,b)=>a.order-b.order).map(x=>`<tr class="${x.result==='Eliminated'?'eliminated-row':''}"><td>Team ${coaches[x.artist.current]}</td><td>${x.order}</td><td><b>${x.artist.name}</b></td><td class="${liveResultClass(x.result)}">${x.result}</td></tr>`).join('')}</tbody></table></section>`).join(''):'<section class="card wiki-wrap live-week-box"><div class="wiki-title">Live Playoffs</div><table class="wiki-history"><tbody><tr><td>Live-show results will appear here.</td></tr></tbody></table></section>';let participants=[...new Map(liveLog.map(x=>[x.artist.id,x.artist])).values()],played=rounds.map(round=>liveLog.filter(x=>x.round===round));participants.sort((a,b)=>{let rank=x=>x.status==='first'?0:x.status==='second'?1:x.status==='third'?2:x.status==='live-elim'?10-rounds.findIndex((round,i)=>played[i].some(e=>e.artist===x&&e.result==='Eliminated')):x.status==='playoff-elim'?20:3;return rank(a)-rank(b)||a.name.localeCompare(b.name)});$('#liveResultsGrid').innerHTML=participants.length?`<thead><tr><th>Artist</th>${rounds.map(round=>`<th>${round==='Live Playoffs'?'Week 1 Playoffs':round}</th>`).join('')}</tr></thead><tbody>${participants.map(a=>{let eliminatedAt=rounds.findIndex((round,i)=>played[i].some(x=>x.artist===a&&x.result==='Eliminated')),cells=[];for(let i=0;i<rounds.length;i++){if(eliminatedAt===i){cells.push(`<td class="result-eliminated" colspan="${rounds.length-i}">Eliminated (${rounds[i]})</td>`);break}let entry=played[i].find(x=>x.artist===a);cells.push(entry?`<td class="${liveResultClass(entry.result)}">${entry.result}</td>`:'<td class="pending">—</td>')}return`<tr><td class="artist-cell"><i class="team-dot t${a.current}"></i>${a.name}</td>${cells.join('')}</tr>`}).join('')}</tbody>`:'<tbody><tr><td>Results grid will update when the Live Playoffs begin.</td></tr></tbody>'}
+function liveResultClass(result){if(result==='Pending')return'pending';if(result==='Public Vote')return'result-public';if(result==='Coach Save')return'result-save';if(result==='Eliminated')return'result-eliminated';if(result==='Winner')return'result-winner';if(result==='Runner-up')return'result-runner';if(result==='Third Place')return'result-third';if(result.startsWith('Bottom'))return'result-bottom';return'result-safe'}
+function playoffTrackerEntries(){
+  if(!playoffOrder.length)return liveLog.filter(x=>x.round==='Live Playoffs');
+  return playoffOrder.map((performance,order)=>{
+    let item=playoffData.flat().find(x=>x.artist.id===performance.artist.id),artist=performance.artist;
+    let result=artist.status==='playoff-elim'?'Eliminated':item?.public?'Public Vote':item?.coachSaved?'Coach Save':'Pending';
+    return{round:'Live Playoffs',artist,order:order+1,result};
+  });
+}
+function trackerEntriesFor(round){
+  if(round==='Live Playoffs')return playoffTrackerEntries();
+  return liveLog.filter(x=>x.round===round).map(x=>({...x,result:x.artist.status==='live-elim'&&x.artist.eliminatedRound===round?'Eliminated':x.result}));
+}
+function renderLiveTracker(){
+  let rounds=['Live Playoffs',...liveRounds.map(x=>x.name)],played=rounds.map(trackerEntriesFor),groups=rounds.map((round,i)=>({round,entries:played[i]})).filter(x=>x.entries.length),sections=$('#liveTrackerSections');
+  sections.innerHTML=groups.length?groups.map(({round,entries})=>`<section class="card wiki-wrap live-week-box"><div class="wiki-title">${round==='Live Playoffs'?'Live Playoffs':`${round} · Live Show`}</div><table class="wiki-history"><thead><tr><th>Coach</th><th>Order</th><th>Artist</th><th>Result</th></tr></thead><tbody>${[...entries].sort((a,b)=>a.order-b.order).map(x=>`<tr class="${x.result==='Eliminated'?'eliminated-row':''}"><td>Team ${coaches[x.artist.current]}</td><td>${x.order}</td><td><b>${x.artist.name}</b></td><td class="${liveResultClass(x.result)}">${x.result}</td></tr>`).join('')}</tbody></table></section>`).join(''):'<section class="card wiki-wrap live-week-box"><div class="wiki-title">Live Playoffs</div><table class="wiki-history"><tbody><tr><td>Live-show results will appear here.</td></tr></tbody></table></section>';
+  let participants=[...new Map(played.flat().map(x=>[x.artist.id,x.artist])).values()];
+  participants.sort((a,b)=>a.name.localeCompare(b.name));
+  $('#liveResultsGrid').innerHTML=participants.length?`<thead><tr><th>Artist</th>${rounds.map(round=>`<th>${round==='Live Playoffs'?'Week 1 Playoffs':round}</th>`).join('')}</tr></thead><tbody>${participants.map(a=>{let eliminatedAt=rounds.findIndex((round,i)=>played[i].some(x=>x.artist.id===a.id&&x.result==='Eliminated')),cells=[];for(let i=0;i<rounds.length;i++){if(eliminatedAt===i){cells.push(`<td class="result-eliminated" colspan="${rounds.length-i}">Eliminated (${rounds[i]})</td>`);break}let entry=played[i].find(x=>x.artist.id===a.id);cells.push(entry?`<td class="${liveResultClass(entry.result)}">${entry.result}</td>`:'<td class="pending">—</td>')}return`<tr><td class="artist-cell"><i class="team-dot t${a.current}"></i>${a.name}</td>${cells.join('')}</tr>`}).join('')}</tbody>`:'<tbody><tr><td>Results grid will update when the Live Playoffs begin.</td></tr></tbody>';
+}
 function startPairing(){$('#blindArea').hidden=true;$('#phaseLabel').textContent='THE BATTLES';setStage('Battles');battlePairingsByCoach=coaches.map((_,k)=>isHuman(k)?[]:cpuGenrePairs(teams[k]).map(p=>p.map(a=>a.id)));if(playerCount===0){beginBattleShow();return}pairingCoach=0;beginHumanBattlePairing()}
 function beginHumanBattlePairing(){while(pairingCoach<4&&!isHuman(pairingCoach))pairingCoach++;if(pairingCoach>=4){beginBattleShow();return}$('#pairingArea').hidden=false;pairDraft=Array(12).fill(null);$('#pairingArea .eyebrow').textContent=`Team ${coaches[pairingCoach]}`;$('#pairingArea h2').textContent=`Create Team ${coaches[pairingCoach]}'s six battle pairings`;renderPairing()}
 function moveDraft(draft,slot,id){let from=draft.indexOf(id),displaced=draft[slot];if(from>=0)draft[from]=displaced;draft[slot]=id}
@@ -161,7 +180,7 @@ const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 let roomCode='',roomLastUpdate='',roomSyncTimer=null,roomSaveTimer=null,roomPollBusy=false,roomSeats=[],localSeat=null;
 const ROOM_POLL_MS=500;
 const clientId=localStorage.getItem('turn-client-id')||crypto.randomUUID();localStorage.setItem('turn-client-id',clientId);
-const roomKeys=['coachName','cpuCoachNames','playerCount','coaches','artists','teams','auditions','auditionIndex','auditionOrder','pending','blindRound','blindReady','roundFlow','liveFlow','userPairs','pairDraft','selected','battleQueue','battleIndex','battleLog','userSteals','cpuSteals','koPairs','koPairDraft','koSelected','koQueue','koIndex','koLog','userKoSteals','cpuKoSteals','playoffData','playoffOrder','playoffIndex','playoffReveals','playoffRevealIndex','playoffPublic','playoffPublicIndex','liveLog','spotifyLog','liveWeek','liveEntries','liveIndex','liveStep','liveBottom','liveSafe','liveSafeIndex','finaleRanked','battlePairingsByCoach','knockoutPairingsByCoach','pairingCoach','stealResponses','roomSeats'];
+const roomKeys=['coachName','cpuCoachNames','playerCount','coaches','artists','teams','auditions','auditionIndex','auditionOrder','pending','blindRound','blindReady','roundFlow','liveFlow','userPairs','pairDraft','selected','battleQueue','battleIndex','battleLog','userSteals','cpuSteals','koPairs','koPairDraft','koSelected','koQueue','koIndex','koLog','userKoSteals','cpuKoSteals','playoffData','playoffOrder','playoffIndex','playoffReveals','playoffRevealIndex','playoffPublic','playoffPublicIndex','liveLog','spotifyLog','liveWeek','liveEntries','liveIndex','liveStep','liveBottom','liveSafe','liveSafeIndex','finaleRanked','seasonResult','battlePairingsByCoach','knockoutPairingsByCoach','pairingCoach','stealResponses','roomSeats'];
 function onlineRoom(){return!!roomCode}
 function localCoach(k){return !onlineRoom()||localSeat===k}
 function roomReady(){return SUPABASE_URL.startsWith('https://')&&SUPABASE_ANON_KEY.length>20}
@@ -306,11 +325,12 @@ function renderRound(round){
     }else flow.stage='steal-choice';
   }
   /* A response may reach the database just before its browser closes. */
+  if(flow.stage==='winner-choice'&&flow.winnerChosen&&flow.required?.every(seat=>flow.ready?.includes(seat))){announceWinner(round);return}
   if(flow.stage==='show-winner'&&flow.required?.every(seat=>flow.ready?.includes(seat))){announceWinner(round);return}
   if(flow.stage==='steal-choice'&&flow.human?.every(seat=>flow.ready?.includes(seat))){applyStealResult(round,flow.entry);revealSteal(round);return}
   if(flow.stage==='show-steal'&&flow.required?.every(seat=>flow.ready?.includes(seat))){revealSteal(round);return}
   if(flow.stage==='reveal'&&roundSeats().length&&roundSeats().every(seat=>flow.ready?.includes(seat))){advanceRound(round);return}
-  if(flow.stage==='show-winner')return renderShowWinner(round,flow);
+  if(flow.stage==='winner-choice'||flow.stage==='show-winner')return renderShowWinner(round,flow);
   if(flow.stage==='steal-choice')return renderStealChoices(round,flow);
   if(flow.stage==='show-steal')return renderShowSteal(round,flow);
   if(flow.stage==='reveal')return renderStealReveal(round,flow);
@@ -321,6 +341,10 @@ function renderRoundChoice(round){
   if(!entry){round==='battle'?finishBattles():finishKnockouts();return}
   let target=roundTarget(round),name=roundName(round);
   if(isHuman(entry.coach)){
+    if(onlineRoom()){
+      roundFlow={round,stage:'winner-choice',entry,required:roundSeats().filter(k=>k!==entry.coach),ready:[],winnerChosen:false};
+      renderShowWinner(round,roundFlow);saveRoundState();return;
+    }
     if(myRoundSeat(entry.coach)){
       $(target).innerHTML=`<div class="result-banner"><p class="eyebrow">Team ${coaches[entry.coach]} chooses</p><h2>Who advances?</h2><div class="button-pair"><button class="btn" data-round-winner="${entry.a.id}">ADVANCE ${entry.a.name.split(' ')[0].toUpperCase()}</button><button class="btn secondary" data-round-winner="${entry.b.id}">ADVANCE ${entry.b.name.split(' ')[0].toUpperCase()}</button></div><p class="copy">Choose the ${name} winner.</p></div>`;
       $$('[data-round-winner]').forEach(button=>button.onclick=()=>resolveRoundWinner(round,+button.dataset.roundWinner));
@@ -334,9 +358,18 @@ function decideCpuWinner(entry){
   /* Stable across every browser: concurrent renders must choose the same winner. */
   return entry.aPerformance===entry.bPerformance?(entry.a.id<entry.b.id?entry.a:entry.b):entry.aPerformance>entry.bPerformance?entry.a:entry.b;
 }
-function resolveRoundWinner(round,chosen){
+async function resolveRoundWinner(round,chosen){
   let entry=currentRoundEntry(round);
   if(!entry)return;
+  if(onlineRoom()&&isHuman(entry.coach)){
+    if(!localCoach(entry.coach)||roundFlow?.stage!=='winner-choice'||roundFlow.winnerChosen||![entry.a.id,entry.b.id].includes(chosen))return;
+    try{
+      let row=await roomRpc('submit_round_winner',{p_room:roomCode,p_client:clientId,p_winner:chosen});
+      await refreshFromRoomRow(row);
+      if(roundFlow?.round===round&&roundFlow.stage==='winner-choice'&&roundFlow.winnerChosen&&roundFlow.required.every(seat=>roundFlow.ready.includes(seat)))announceWinner(round);
+    }catch(error){console.warn(error);toast('Could not record the winner. Please try again.');}
+    return;
+  }
   if(roundFlow?.round===round&&roundFlow.entry?.winner)return renderRound(round);
   if(isHuman(entry.coach)&&![entry.a.id,entry.b.id].includes(chosen))return;
   let winner=isHuman(entry.coach)?(entry.a.id===chosen?entry.a:entry.b):decideCpuWinner(entry),loser=winner===entry.a?entry.b:entry.a;
@@ -352,17 +385,18 @@ function resolveRoundWinner(round,chosen){
   if(!required.length)announceWinner(round);else{renderShowWinner(round,roundFlow);saveRoundState()}
 }
 function renderShowWinner(round,flow){
-  let target=roundTarget(round),humans=roundSeats(),ready=flow.ready||[];
-  $(target).innerHTML=`<div class="result-banner"><p class="eyebrow">Winner ready</p><h2>${isHuman(flow.entry.coach)?`Team ${coaches[flow.entry.coach]} has selected the winner.`:'The CPU coach has selected the winner.'}</h2><p class="copy">${flow.required.length?'Every required human coach must reveal the result.':'Revealing the result now.'}</p><div class="human-decision-grid">${roundPlayerCards(humans,(k,mine)=>`<section class="human-decision ${ready.includes(k)?'decided':''}"><b>Team ${coaches[k]}</b>${flow.required.includes(k)&&mine&&!ready.includes(k)?`<button class="btn" data-show-winner="${k}">SHOW WINNER</button>`:`<small>${ready.includes(k)?'Shown ✓':flow.required.includes(k)?'Awaiting Show Winner':'Winner selected ✓'}</small>`}</section>`)}</div></div>`;
+  let target=roundTarget(round),humans=roundSeats(),ready=flow.ready||[],choosing=flow.stage==='winner-choice',coach=flow.entry.coach;
+  $(target).innerHTML=`<div class="result-banner"><p class="eyebrow">${choosing?'Winner checkpoint':'Winner ready'}</p><h2>${choosing?`Team ${coaches[coach]} is choosing the winner.`:`${isHuman(coach)?`Team ${coaches[coach]} has selected the winner.`:'The CPU coach has selected the winner.'}`}</h2><p class="copy">${choosing?'Other human coaches can press Show Winner now. The result stays hidden until the coach selects a winner and every reveal is ready.':flow.required.length?'Every required human coach must reveal the result.':'Revealing the result now.'}</p><div class="human-decision-grid">${roundPlayerCards(humans,(k,mine)=>`<section class="human-decision ${ready.includes(k)?'decided':''}"><b>Team ${coaches[k]}</b>${choosing&&k===coach?(mine&&!flow.winnerChosen?`<div class="button-pair"><button class="btn" data-round-winner="${flow.entry.a.id}">ADVANCE ${flow.entry.a.name.split(' ')[0].toUpperCase()}</button><button class="btn secondary" data-round-winner="${flow.entry.b.id}">ADVANCE ${flow.entry.b.name.split(' ')[0].toUpperCase()}</button></div>`:`<small>${flow.winnerChosen?'Winner selected ✓':'Choosing winner…'}</small>`):flow.required.includes(k)&&mine&&!ready.includes(k)?`<button class="btn" data-show-winner="${k}">SHOW WINNER</button>`:`<small>${ready.includes(k)?'Ready ✓':flow.required.includes(k)?'Awaiting Show Winner':'Winner selected ✓'}</small>`}</section>`)}</div></div>`;
+  $$('[data-round-winner]').forEach(button=>button.onclick=()=>resolveRoundWinner(round,+button.dataset.roundWinner));
   $$('[data-show-winner]').forEach(button=>button.onclick=()=>acknowledgeWinner(round,+button.dataset.showWinner));
 }
 async function acknowledgeWinner(round,k){
-  if(!myRoundSeat(k)||roundFlow?.stage!=='show-winner'||!roundFlow.required.includes(k))return;
+  if(!myRoundSeat(k)||!['winner-choice','show-winner'].includes(roundFlow?.stage)||!roundFlow.required.includes(k))return;
   if(onlineRoom()){
     try{await submitRoundResponse('show_winner');}catch(error){console.warn(error);toast('Could not record Show Winner. Please try again.');return}
   }else if(!roundFlow.ready.includes(k))roundFlow.ready.push(k);
-  if(!roundFlow||roundFlow.round!==round||roundFlow.stage!=='show-winner')return;
-  if(roundFlow.required.every(seat=>roundFlow.ready.includes(seat)))announceWinner(round);else{renderShowWinner(round,roundFlow);saveRoundState()}
+  if(!roundFlow||roundFlow.round!==round||!['winner-choice','show-winner'].includes(roundFlow.stage))return;
+  if(roundFlow.winnerChosen&&roundFlow.required.every(seat=>roundFlow.ready.includes(seat)))announceWinner(round);else{renderShowWinner(round,roundFlow);saveRoundState()}
 }
 function announceWinner(round){
   let flow=roundFlow,entry=flow?.entry;
@@ -411,11 +445,16 @@ async function acknowledgeShowSteal(round,k){
   if(roundFlow.required.every(seat=>roundFlow.ready.includes(seat)))revealSteal(round);else{renderShowSteal(round,roundFlow);saveRoundState()}
 }
 function applyStealResult(round,entry){
-  if(entry.stealResolved)return;
+  if(entry.stealResolved){syncRoundTrackerEntry(round,entry);return}
   let counts=roundSteals(round),choices=[...entry.stealers].sort((a,b)=>a-b),chosen=choices.length?choices[entry.loser.id%choices.length]:null,artist=entry.loser;
   entry.stealWinner=chosen;entry.stealResolved=true;
   if(chosen!==null){artist.departures.push({team:artist.current,round});artist.current=chosen;artist.status='';artist.stolen=true;artist.stolenRound=round;counts[chosen]++;entry.outcome=`${artist.name} chose Team ${coaches[chosen]}.`}
   else entry.outcome=`${artist.name} was not stolen and is eliminated.`;
+  syncRoundTrackerEntry(round,entry);
+}
+function syncRoundTrackerEntry(round,entry){
+  let log=round==='battle'?battleLog:koLog,index=log.findIndex(x=>x.a?.id===entry.a?.id&&x.b?.id===entry.b?.id&&x.coach===entry.coach);
+  if(index<0)log.push(entry);else log[index]=entry;
 }
 function revealSteal(round){
   let entry=roundFlow?.entry;if(!entry)return;
@@ -530,8 +569,8 @@ function renderLiveFlow(){
 }
 function renderPlayoffFlow(){
   $('#playoffPerformance').hidden=true;$('#playoffResults').hidden=false;$('#coachSave').classList.add('hidden');renderPlayoffVoteBoard();
-  (liveFlow.revealedPublic||[]).forEach(id=>{let x=playoffData.flat().find(item=>item.artist.id===id);if(x)setPlayoffCard(x,'safe')});
-  if(liveFlow.revealedSave){let x=playoffData.flat().find(item=>item.artist.id===liveFlow.revealedSave);if(x)setPlayoffCard(x,'coach-save')}
+  (liveFlow.playoffSafeIds||liveFlow.revealedPublic||[]).forEach(id=>{let x=playoffData.flat().find(item=>item.artist.id===id);if(x)setPlayoffCard(x,'safe')});
+  (liveFlow.playoffSaveIds||[liveFlow.revealedSave].filter(Boolean)).forEach(id=>{let x=playoffData.flat().find(item=>item.artist.id===id);if(x)setPlayoffCard(x,'coach-save')});
   $('#playoffRevealFeed').innerHTML=liveFlow.lastReveal?`<div class="reveal-item">${liveFlow.lastReveal}</div>`:'';
   if(liveFlow.stage==='save-choice'){
     $('#revealPlayoffVote').hidden=true;
@@ -558,36 +597,37 @@ async function chooseLiveSave(id){
     }catch(error){console.warn(error);toast('Could not save that artist. Please try again.');liveSavePending=false;renderLiveFlow();}
     return;
   }
-  let carry={revealedPublic:liveFlow.revealedPublic||[],lastReveal:liveFlow.lastReveal||''};
+  let carry={revealedPublic:liveFlow.revealedPublic||[],playoffSafeIds:liveFlow.playoffSafeIds||[],playoffSaveIds:liveFlow.playoffSaveIds||[],lastReveal:liveFlow.lastReveal||''};
   setLiveCheckpoint('playoff','playoff-save','REVEAL RESULT',{
     ...carry,team:liveFlow.team,saveArtistId:id
   },liveSeats([liveFlow.team]));
   if(!liveFlow.required.length)executeLiveFlow();
 }
 function beginPlayoffCheckpoint(action,label,details={}){
-  setLiveCheckpoint('playoff',action,label,{revealedPublic:[],lastReveal:'',...details});
+  setLiveCheckpoint('playoff',action,label,{revealedPublic:[],playoffSafeIds:[],playoffSaveIds:[],lastReveal:'',...details});
 }
 function executePlayoffFlow(){
   let flow=liveFlow,k=flow.team;
   if(flow.action==='playoff-public'){
     let x=playoffPublic[playoffPublicIndex++];
-    let revealed=[...(flow.revealedPublic||[]),x.artist.id],last=`<b>${x.artist.name}</b> is safe for Team ${coaches[k]}.<br><small>Public Vote</small>`;
-    if(playoffPublicIndex<playoffPublic.length){setLiveCheckpoint('playoff','playoff-public','REVEAL NEXT PUBLIC VOTE →',{team:k,revealedPublic:revealed,lastReveal:last});return}
+    let revealed=[...(flow.revealedPublic||[]),x.artist.id],safeIds=[...(flow.playoffSafeIds||[]),x.artist.id],last=`<b>${x.artist.name}</b> is safe for Team ${coaches[k]}.<br><small>Public Vote</small>`;
+    if(playoffPublicIndex<playoffPublic.length){setLiveCheckpoint('playoff','playoff-public','REVEAL NEXT PUBLIC VOTE →',{team:k,revealedPublic:revealed,playoffSafeIds:safeIds,playoffSaveIds:flow.playoffSaveIds||[],lastReveal:last});return}
     if(isHuman(k)){
-      liveFlow={mode:'playoff',stage:'save-choice',team:k,revealedPublic:revealed,lastReveal:last};renderLiveFlow();saveRoundState();return;
+      liveFlow={mode:'playoff',stage:'save-choice',team:k,revealedPublic:revealed,playoffSafeIds:safeIds,playoffSaveIds:flow.playoffSaveIds||[],lastReveal:last};renderLiveFlow();saveRoundState();return;
     }
     let save=playoffData[k].find(x=>x.coachSaved);
-    setLiveCheckpoint('playoff','playoff-save','REVEAL COACH SAVE →',{team:k,revealedPublic:revealed,lastReveal:last,saveArtistId:save.artist.id});return;
+    setLiveCheckpoint('playoff','playoff-save','REVEAL COACH SAVE →',{team:k,revealedPublic:revealed,playoffSafeIds:safeIds,playoffSaveIds:flow.playoffSaveIds||[],lastReveal:last,saveArtistId:save.artist.id});return;
   }
   if(flow.action==='playoff-save'){
     let chosen=playoffData[k].find(x=>x.artist.id===flow.saveArtistId);if(!chosen)return;
     chosen.coachSaved=true;
     let last=`<b>${chosen.artist.name}</b> is saved by Team ${coaches[k]}.`;
-    setLiveCheckpoint('playoff','playoff-next-team','ADVANCE TO NEXT TEAM →',{team:k,revealedPublic:flow.revealedPublic||[],revealedSave:chosen.artist.id,lastReveal:last});return;
+    let saveIds=[...(flow.playoffSaveIds||[]),chosen.artist.id];
+    setLiveCheckpoint('playoff','playoff-next-team','ADVANCE TO NEXT TEAM →',{team:k,revealedPublic:flow.revealedPublic||[],playoffSafeIds:flow.playoffSafeIds||[],playoffSaveIds:saveIds,revealedSave:chosen.artist.id,lastReveal:last});return;
   }
   if(flow.action==='playoff-next-team'){
     playoffRevealIndex++;
-    if(playoffRevealIndex<4){let team=playoffData[playoffRevealIndex];playoffPublic=team.filter(x=>x.public);playoffPublicIndex=0;beginPlayoffCheckpoint('playoff-public',`REVEAL TEAM ${coaches[playoffRevealIndex].toUpperCase()} PUBLIC VOTE →`,{team:playoffRevealIndex});return}
+    if(playoffRevealIndex<4){let team=playoffData[playoffRevealIndex];playoffPublic=team.filter(x=>x.public);playoffPublicIndex=0;beginPlayoffCheckpoint('playoff-public',`REVEAL TEAM ${coaches[playoffRevealIndex].toUpperCase()} PUBLIC VOTE →`,{team:playoffRevealIndex,playoffSafeIds:flow.playoffSafeIds||[],playoffSaveIds:flow.playoffSaveIds||[]});return}
     liveFlow=null;completePlayoffs();saveRoundState();
   }
 }
@@ -604,6 +644,13 @@ function renderLiveShowFlow(){
 }
 function beginLiveWeekCheckpoint(){let cfg=liveRounds[liveWeek];setLiveCheckpoint('begin-week','begin-week',`BEGIN ${cfg.name.toUpperCase()} →`,{lastReveal:''})}
 function beginLiveResultCheckpoint(action,label,details={}){setLiveCheckpoint('live',action,label,{safeIds:[],lastReveal:'',...details})}
+function renderSeasonResult(){
+  if(!seasonResult)return;
+  let winner=artists.find(a=>a.id===seasonResult.winnerId),runner=artists.find(a=>a.id===seasonResult.runnerId),third=artists.find(a=>a.id===seasonResult.thirdId);
+  if(!winner||!runner||!third)return;
+  $('#winnerHeadline').textContent=`${winner.name} wins Season 01!`;
+  $('#finalPlacements').textContent=`Team ${coaches[winner.current]} wins. ${runner.name} is runner-up; ${third.name} finishes third.`;
+}
 function executeLiveShowFlow(){
   let flow=liveFlow,cfg=liveRounds[liveWeek];
   if(flow.mode==='begin-week'){liveFlow=null;startLiveWeek();saveRoundState();return}
@@ -632,7 +679,8 @@ function executeLiveShowFlow(){
   if(flow.action==='finale-winner'){
     let ranked=finaleRanked,classes=['first','second','third'],labels=['Winner','Runner-up','Third Place'];
     ranked.forEach((x,n)=>{recordRoundScore(x.artist,'Finale',x.performance);x.artist.status=classes[n];liveLog.push({round:'Finale',artist:x.artist,order:n+1,comment:x.comment,streams:x.streams,result:labels[n]})});
-    liveFlow=null;renderAll();$('#liveArea').hidden=true;$('#seasonComplete').hidden=false;$('#winnerHeadline').textContent=`${ranked[0].artist.name} wins Season 01!`;$('#finalPlacements').textContent=`Team ${coaches[ranked[0].artist.current]} wins. ${ranked[1].artist.name} is runner-up; ${ranked[2].artist.name} finishes third.`;$('#phaseLabel').textContent='SEASON COMPLETE';saveRoundState();
+    seasonResult={winnerId:ranked[0].artist.id,runnerId:ranked[1].artist.id,thirdId:ranked[2].artist.id};
+    liveFlow=null;renderAll();$('#liveArea').hidden=true;$('#seasonComplete').hidden=false;renderSeasonResult();$('#phaseLabel').textContent='SEASON COMPLETE';saveRoundState();
   }
 }
 function executeLiveFlow(){if(!liveFlow)return;if(liveFlow.mode==='playoff')executePlayoffFlow();else executeLiveShowFlow()}
@@ -671,7 +719,23 @@ function openRoomChat(){
   app.classList.add('chat-open');$('#chatPanel').classList.remove('hidden');$('#chatToggle').classList.add('hidden');loadChat();
 }
 const hydrateWithRoundUi=hydrateRoom;
-hydrateRoom=function(state){hydrateWithRoundUi(state);if(onlineRoom())openRoomChat()};
+hydrateRoom=function(state){
+  /* Performance viewing is intentionally personal. A result checkpoint opened
+     by another coach must not pull someone out of their current performance. */
+  let keepPlayoffPerformance=onlineRoom()&&state.screen==='playoffArea'&&!$('#playoffArea').hidden&&!$('#playoffPerformance').hidden,
+      keptPlayoffIndex=playoffIndex,
+      keepLivePerformance=onlineRoom()&&state.screen==='liveArea'&&!$('#liveArea').hidden&&!$('#livePerformance').hidden,
+      keptLiveIndex=liveIndex,keptLiveWeek=liveWeek,keptLiveEntries=liveEntries;
+  hydrateWithRoundUi(state);
+  if(keepPlayoffPerformance&&state.liveFlow?.mode==='playoff'&&keptPlayoffIndex<playoffOrder.length){
+    playoffIndex=keptPlayoffIndex;$('#playoffPerformance').hidden=false;$('#playoffResults').hidden=true;showPlayoffPerformer();
+  }
+  if(keepLivePerformance&&state.liveFlow&&state.liveWeek===keptLiveWeek&&keptLiveIndex<keptLiveEntries.length){
+    liveWeek=keptLiveWeek;liveEntries=keptLiveEntries;liveIndex=keptLiveIndex;$('#livePerformance').hidden=false;$('#liveResults').hidden=true;showLivePerformer();
+  }
+  if(state.screen==='seasonComplete')renderSeasonResult();
+  if(onlineRoom())openRoomChat();
+};
 const startLobbyWithChat=showRoomLobby;
 showRoomLobby=function(){startLobbyWithChat();$('#lobbyCopy').onclick=()=>navigator.clipboard?.writeText(`${location.origin}${location.pathname}?room=${roomCode}`).then(()=>toast('Invite link copied.'))};
 window.addEventListener('resize',()=>{if(window.matchMedia('(max-width: 1200px)').matches){let app=$('#app');app?.classList.remove('chat-open');$('#chatPanel')?.classList.add('hidden');$('#chatToggle')?.classList.remove('hidden')}});
