@@ -271,10 +271,25 @@ function renderRoundWait(target, heading, copy){
 function renderRound(round){
   let flow=roundFlow;
   if(!flow||flow.round!==round){renderRoundChoice(round);return}
-  if(flow.stage==='winner')return renderWinnerAnnouncement(round,flow);
-  if(flow.stage==='steal')return renderStealChoices(round,flow);
+  /* Recover safely from rooms saved by the earlier controller. */
+  if(flow.stage==='cpu-reveal'){roundFlow=null;renderRoundChoice(round);return}
+  if(flow.stage==='winner'){announceWinner(round);return}
+  if(flow.stage==='steal'){
+    /* Complete a steal that was already answered before the older UI stalled. */
+    if(flow.human?.length&&flow.human.every(seat=>flow.ready?.includes(seat))){
+      flow.stage='steal-choice';applyStealResult(round,flow.entry);revealSteal(round);return;
+    }
+    if(!flow.human?.length){
+      applyStealResult(round,flow.entry);
+      flow.stage='show-steal';flow.required=roundSeats();flow.ready=[];
+      if(!flow.required.length){revealSteal(round);return}
+    }else flow.stage='steal-choice';
+  }
+  if(flow.stage==='show-winner')return renderShowWinner(round,flow);
+  if(flow.stage==='steal-choice')return renderStealChoices(round,flow);
+  if(flow.stage==='show-steal')return renderShowSteal(round,flow);
   if(flow.stage==='reveal')return renderStealReveal(round,flow);
-  renderRoundChoice(round);
+  roundFlow=null;renderRoundChoice(round);
 }
 function renderRoundChoice(round){
   let entry=currentRoundEntry(round);
@@ -287,21 +302,8 @@ function renderRoundChoice(round){
     }else renderRoundWait(target,`Team ${coaches[entry.coach]} is choosing the winner.`,"The result will appear here as soon as the coach decides.");
     return;
   }
-  let acknowledgements=roundFlow?.round===round&&roundFlow.stage==='cpu-reveal'?roundFlow.ready:[];
-  let humans=roundSeats();
-  if(!humans.length){
-    $(target).innerHTML=`<div class="result-banner"><p class="eyebrow">CPU coach</p><h2>Ready to reveal the winner.</h2><button class="btn" id="spectatorRevealWinner">REVEAL WINNER →</button></div>`;
-    $('#spectatorRevealWinner').onclick=()=>resolveRoundWinner(round);
-    return;
-  }
-  $(target).innerHTML=`<div class="result-banner"><p class="eyebrow">CPU coach · Team ${coaches[entry.coach]}</p><h2>Ready to reveal the winner.</h2><p class="copy">Every human coach confirms the reveal.</p><div class="human-decision-grid">${roundPlayerCards(humans,(k,mine)=>`<section class="human-decision ${acknowledgements.includes(k)?'decided':''}"><b>Team ${coaches[k]}</b>${mine&&!acknowledgements.includes(k)?`<button class="btn" data-cpu-reveal="${k}">REVEAL WINNER</button>`:`<small>${acknowledgements.includes(k)?'Ready ✓':'Waiting for this coach'}</small>`}</section>`)}</div></div>`;
-  $$('[data-cpu-reveal]').forEach(button=>button.onclick=()=>acknowledgeCpuWinner(round,+button.dataset.cpuReveal));
-}
-function acknowledgeCpuWinner(round,k){
-  if(!myRoundSeat(k))return;
-  if(!roundFlow||roundFlow.round!==round||roundFlow.stage!=='cpu-reveal')roundFlow={round,stage:'cpu-reveal',ready:[]};
-  if(!roundFlow.ready.includes(k))roundFlow.ready.push(k);
-  if(allRoundPlayersReady(roundFlow.ready))resolveRoundWinner(round);else{renderRoundChoice(round);saveRoundState()}
+  /* CPU decisions are made now; humans only control when the result appears. */
+  resolveRoundWinner(round);
 }
 function decideCpuWinner(entry){
   return entry.aPerformance+Math.random()*12>entry.bPerformance+Math.random()*12?entry.a:entry.b;
@@ -309,27 +311,31 @@ function decideCpuWinner(entry){
 function resolveRoundWinner(round,chosen){
   let entry=currentRoundEntry(round);
   if(!entry)return;
+  if(roundFlow?.round===round&&roundFlow.entry?.winner)return renderRound(round);
+  if(isHuman(entry.coach)&&![entry.a.id,entry.b.id].includes(chosen))return;
   let winner=isHuman(entry.coach)?(entry.a.id===chosen?entry.a:entry.b):decideCpuWinner(entry),loser=winner===entry.a?entry.b:entry.a;
   recordRoundScore(entry.a,round==='battle'?'Battles':'Knockouts',entry.aPerformance);
   recordRoundScore(entry.b,round==='battle'?'Battles':'Knockouts',entry.bPerformance);
   loser.status=round==='battle'?'battle-elim':'knockout-elim';
   let result={...entry,winner,loser,stealers:[],outcome:''};
   (round==='battle'?battleLog:koLog).push(result);
-  roundFlow={round,stage:'winner',entry:result,ready:[]};
-  renderRound(round);renderAll();saveRoundState();
+  /* A human coach has already seen their own choice; everybody else reveals it. */
+  let required=isHuman(entry.coach)?roundSeats().filter(k=>k!==entry.coach):roundSeats();
+  roundFlow={round,stage:'show-winner',entry:result,required,ready:[]};
+  renderAll();
+  if(!required.length)announceWinner(round);else{renderShowWinner(round,roundFlow);saveRoundState()}
 }
-function renderWinnerAnnouncement(round,flow){
+function renderShowWinner(round,flow){
   let target=roundTarget(round),humans=roundSeats(),ready=flow.ready||[];
-  $(target).innerHTML=`<div class="result-banner"><p class="eyebrow">Winner announced</p><h2>${flow.entry.winner.name} wins the ${roundName(round)}.</h2><p class="copy">${flow.entry.loser.name} is now available to steal.</p><div class="human-decision-grid">${roundPlayerCards(humans,(k,mine)=>`<section class="human-decision ${ready.includes(k)?'decided':''}"><b>Team ${coaches[k]}</b>${mine&&!ready.includes(k)?`<button class="btn" data-open-steals="${k}">ADVANCE</button>`:`<small>${ready.includes(k)?'Ready ✓':'Reviewing the result'}</small>`}</section>`)}</div>${!humans.length?'<button class="btn" id="openSteals">ADVANCE</button>':''}</div>`;
-  $$('[data-open-steals]').forEach(button=>button.onclick=()=>acknowledgeWinner(round,+button.dataset.openSteals));
-  if($('#openSteals'))$('#openSteals').onclick=()=>openRoundSteals(round);
+  $(target).innerHTML=`<div class="result-banner"><p class="eyebrow">Winner ready</p><h2>${isHuman(flow.entry.coach)?`Team ${coaches[flow.entry.coach]} has selected the winner.`:'The CPU coach has selected the winner.'}</h2><p class="copy">${flow.required.length?'Every required human coach must reveal the result.':'Revealing the result now.'}</p><div class="human-decision-grid">${roundPlayerCards(humans,(k,mine)=>`<section class="human-decision ${ready.includes(k)?'decided':''}"><b>Team ${coaches[k]}</b>${flow.required.includes(k)&&mine&&!ready.includes(k)?`<button class="btn" data-show-winner="${k}">SHOW WINNER</button>`:`<small>${ready.includes(k)?'Shown ✓':flow.required.includes(k)?'Awaiting Show Winner':'Winner selected ✓'}</small>`}</section>`)}</div></div>`;
+  $$('[data-show-winner]').forEach(button=>button.onclick=()=>acknowledgeWinner(round,+button.dataset.showWinner));
 }
 function acknowledgeWinner(round,k){
-  if(!myRoundSeat(k)||roundFlow?.stage!=='winner')return;
+  if(!myRoundSeat(k)||roundFlow?.stage!=='show-winner'||!roundFlow.required.includes(k))return;
   if(!roundFlow.ready.includes(k))roundFlow.ready.push(k);
-  if(allRoundPlayersReady(roundFlow.ready))openRoundSteals(round);else{renderWinnerAnnouncement(round,roundFlow);saveRoundState()}
+  if(roundFlow.required.every(seat=>roundFlow.ready.includes(seat)))announceWinner(round);else{renderShowWinner(round,roundFlow);saveRoundState()}
 }
-function openRoundSteals(round){
+function announceWinner(round){
   let flow=roundFlow,entry=flow?.entry;
   if(!entry)return;
   let cap=roundCap(round),counts=roundSteals(round),queue=roundQueue(round),index=roundIndex(round),performance=entry.loser===entry.a?entry.aPerformance:entry.bPerformance;
@@ -340,32 +346,62 @@ function openRoundSteals(round){
   entry.stealers=[];
   eligible.filter(k=>!isHuman(k)).forEach(k=>{if(must[k]||Math.random()<chance)entry.stealers.push(k)});
   let human=eligible.filter(isHuman);
-  roundFlow={round,stage:'steal',entry,eligible,human,ready:[],must};
-  if(!human.length)return resolveRoundSteals(round);
-  renderStealChoices(round,roundFlow);saveRoundState();
+  if(human.length){
+    roundFlow={round,stage:'steal-choice',entry,eligible,human,ready:[],must};
+    renderStealChoices(round,roundFlow);saveRoundState();
+    return;
+  }
+  /* CPU choices resolve immediately.  "Show Steal" is only a reveal gate. */
+  if(eligible.length){
+    applyStealResult(round,entry);
+    roundFlow={round,stage:'show-steal',entry,required:roundSeats(),ready:[]};
+    if(!roundFlow.required.length)revealSteal(round);else{renderShowSteal(round,roundFlow);saveRoundState()}
+    return;
+  }
+  entry.outcome=`${entry.loser.name} was not stolen and is eliminated.`;
+  entry.stealResolved=true;
+  roundFlow={round,stage:'reveal',entry,ready:[]};
+  renderStealReveal(round,roundFlow);renderAll();saveRoundState();
+}
+function openRoundSteals(round){announceWinner(round)}
+function renderShowSteal(round,flow){
+  let target=roundTarget(round),ready=flow.ready||[];
+  $(target).innerHTML=`<div class="result-banner"><p class="eyebrow">Winner announced</p><h2>${flow.entry.winner.name} wins the ${roundName(round)}.</h2><p class="copy">${flow.entry.loser.name} was available to steal. CPU coaches have already decided.</p><div class="human-decision-grid">${roundPlayerCards(flow.required,(k,mine)=>`<section class="human-decision ${ready.includes(k)?'decided':''}"><b>Team ${coaches[k]}</b>${mine&&!ready.includes(k)?`<button class="btn" data-show-steal="${k}">SHOW STEAL</button>`:`<small>${ready.includes(k)?'Shown ✓':'Awaiting Show Steal'}</small>`}</section>`)}</div></div>`;
+  $$('[data-show-steal]').forEach(button=>button.onclick=()=>acknowledgeShowSteal(round,+button.dataset.showSteal));
+}
+function acknowledgeShowSteal(round,k){
+  if(!myRoundSeat(k)||roundFlow?.stage!=='show-steal'||!roundFlow.required.includes(k))return;
+  if(!roundFlow.ready.includes(k))roundFlow.ready.push(k);
+  if(roundFlow.required.every(seat=>roundFlow.ready.includes(seat)))revealSteal(round);else{renderShowSteal(round,roundFlow);saveRoundState()}
+}
+function applyStealResult(round,entry){
+  if(entry.stealResolved)return;
+  let counts=roundSteals(round),chosen=entry.stealers.length?pick(entry.stealers):null,artist=entry.loser;
+  entry.stealWinner=chosen;entry.stealResolved=true;
+  if(chosen!==null){artist.departures.push({team:artist.current,round});artist.current=chosen;artist.status='';artist.stolen=true;artist.stolenRound=round;counts[chosen]++;entry.outcome=`${artist.name} chose Team ${coaches[chosen]}.`}
+  else entry.outcome=`${artist.name} was not stolen and is eliminated.`;
+}
+function revealSteal(round){
+  let entry=roundFlow?.entry;if(!entry)return;
+  roundFlow={round,stage:'reveal',entry,ready:[]};
+  renderStealReveal(round,roundFlow);renderAll();saveRoundState();
 }
 function renderStealChoices(round,flow){
   let target=roundTarget(round),entry=flow.entry,ready=flow.ready||[];
-  $(target).innerHTML=`<div class="steal-box"><p class="eyebrow">Steal decision</p><h2>Steal ${entry.loser.name}?</h2><p class="copy">CPU coaches have already made their decisions.</p><div class="human-decision-grid">${roundPlayerCards(flow.human,(k,mine)=>`<section class="human-decision ${ready.includes(k)?'decided':''}" data-steal-box="${k}"><b>Team ${coaches[k]}</b>${flow.must?.[k]?'<small>Steal required to complete your team</small>':''}${mine&&!ready.includes(k)?`<div class="button-pair"><button class="btn" data-round-steal="${k}" data-choice="yes">STEAL</button><button class="btn secondary" data-round-steal="${k}" data-choice="no" ${flow.must?.[k]?'disabled':''}>PASS</button></div>`:`<small>${ready.includes(k)?'Decision locked ✓':'Waiting for this coach'}</small>`}</section>`)}
+  $(target).innerHTML=`<div class="steal-box"><p class="eyebrow">Winner announced</p><h2>${entry.winner.name} wins. Steal ${entry.loser.name}?</h2><p class="copy">CPU coaches have already made their decisions. Only eligible human coaches need to choose.</p><div class="human-decision-grid">${roundPlayerCards(flow.human,(k,mine)=>`<section class="human-decision ${ready.includes(k)?'decided':''}" data-steal-box="${k}"><b>Team ${coaches[k]}</b>${flow.must?.[k]?'<small>Steal required to complete your team</small>':''}${mine&&!ready.includes(k)?`<div class="button-pair"><button class="btn" data-round-steal="${k}" data-choice="yes">STEAL</button><button class="btn secondary" data-round-steal="${k}" data-choice="no" ${flow.must?.[k]?'disabled':''}>PASS</button></div>`:`<small>${ready.includes(k)?'Decision locked ✓':'Another human coach is deciding'}</small>`}</section>`)}
   </div></div>`;
   $$('[data-round-steal]').forEach(button=>button.onclick=()=>answerRoundSteal(round,+button.dataset.roundSteal,button.dataset.choice==='yes'));
 }
 function answerRoundSteal(round,k,wants){
   let flow=roundFlow;
-  if(!flow||flow.round!==round||flow.stage!=='steal'||!flow.human.includes(k)||!myRoundSeat(k)||flow.ready.includes(k))return;
+  if(!flow||flow.round!==round||flow.stage!=='steal-choice'||!flow.human.includes(k)||!myRoundSeat(k)||flow.ready.includes(k))return;
   if(wants)flow.entry.stealers.push(k);
   flow.ready.push(k);
-  if(allRoundPlayersReady(flow.ready))resolveRoundSteals(round);else{renderStealChoices(round,flow);saveRoundState()}
+  if(flow.human.every(seat=>flow.ready.includes(seat))){applyStealResult(round,flow.entry);revealSteal(round)}else{renderStealChoices(round,flow);saveRoundState()}
 }
 function resolveRoundSteals(round){
-  let flow=roundFlow,entry=flow?.entry;
-  if(!entry)return;
-  let counts=roundSteals(round),chosen=entry.stealers.length?pick(entry.stealers):null,artist=entry.loser;
-  entry.stealWinner=chosen;
-  if(chosen!==null){artist.departures.push({team:artist.current,round});artist.current=chosen;artist.status='';artist.stolen=true;artist.stolenRound=round;counts[chosen]++;entry.outcome=`${artist.name} chose Team ${coaches[chosen]}.`}
-  else entry.outcome=`${artist.name} was not stolen and is eliminated.`;
-  roundFlow={round,stage:'reveal',entry,ready:[]};
-  renderRound(round);renderAll();saveRoundState();
+  let entry=roundFlow?.entry;if(!entry)return;
+  applyStealResult(round,entry);revealSteal(round);
 }
 function renderStealReveal(round,flow){
   let target=roundTarget(round),entry=flow.entry,humans=roundSeats(),ready=flow.ready||[];
@@ -402,7 +438,8 @@ showKnockout=function(){presentRound('knockout')};
 resolveBattle=function(chosen){resolveRoundWinner('battle',chosen)};
 resolveKnockout=function(chosen){resolveRoundWinner('knockout',chosen)};
 beginSharedSteal=function(artist,entry,round){
-  roundFlow={round,stage:'winner',entry,ready:[]};renderWinnerAnnouncement(round,roundFlow);
+  /* Compatibility for any older in-memory round that reaches this hook. */
+  roundFlow={round,stage:'winner',entry,ready:[]};announceWinner(round);
 };
 answerSharedSteal=function(k,wants){answerRoundSteal(roundFlow?.round,k,wants)};
 
